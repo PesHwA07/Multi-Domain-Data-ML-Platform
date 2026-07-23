@@ -37,3 +37,12 @@ HAVING COUNT(*) >= 5
 ORDER BY avg_energy DESC
 LIMIT 15;
 
+-- 4. Popularity Distribution by Danceability Buckets (0 to 1 scale)
+-- Demonstrates the use of WIDTH_BUCKET for histogram-like analysis
+SELECT 
+    WIDTH_BUCKET(danceability, 0, 1, 10) as danceability_bucket,
+    ROUND(AVG(popularity)::numeric, 2) as avg_popularity,
+    COUNT(*) as track_count
+FROM spotify.tracks_clean
+GROUP BY WIDTH_BUCKET(danceability, 0, 1, 10)
+ORDER BY danceability_bucket;
