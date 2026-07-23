@@ -72,3 +72,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 1. **Trigger**: Periodic/weekly Airflow DAG.
 2. **Extract**: Load new credit card transactions.
 3. **Train**: Apply SMOTE for imbalance, train Random Forest/Logistic Regression.
+4. **Evaluate & Load**: Calculate Precision/Recall/F1/PR-AUC, save model artifact/metrics.
+
+## 3.4 Serving & Dashboard Flow
+1. **Client Request**: User hits `/predict/fraud` (POST) or `/forecast/energy` (GET).
+2. **API Processing**: FastAPI computes prediction or fetches forecast.
+3. **Logging**: Request, response, and latency logged to Postgres.
+4. **Dashboard View**: Streamlit queries Postgres to display real-time analytics, model metrics, and ETL freshness.
+
+---
+
+# 4. Design Guidelines
+
+## 4.1 Architecture Principles
+- **Separation of Concerns**: Each domain (Spotify, Energy, Fraud) maintains isolated schemas within the shared database.
+- **Idempotency**: All Airflow DAGs must be idempotent, allowing safe reruns on failure.
+- **Reproducibility**: Containerized via `docker-compose` to ensure local environments mirror production.
+
