@@ -21,3 +21,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 4. **Unified Dashboard**: A Streamlit interface to monitor data freshness, visualize analytical queries, track model metrics, and monitor API logs.
 5. **REST API**: A FastAPI service providing endpoints for fraud prediction and energy forecasting lookups.
 
+## 1.4 Non-Functional Requirements
+- **Performance**: API endpoints must respond in real-time. 
+- **Scalability**: Architecture must be containerized and deployable to cloud services (AWS/GCP).
+- **Monitoring**: Centralized tracking for DAG runs, data quality, and model performance.
+
+---
+
+# 2. Technical Specifications (TechSpecs)
+
+## 2.1 Technology Stack
+- **Orchestration**: Apache Airflow (Docker)
+- **Database**: PostgreSQL (Docker) - Single database, multiple schemas.
+- **Forecasting Model**: Prophet (Primary) and ARIMA (Baseline)
+- **Classification Model**: Random Forest / Logistic Regression with `imbalanced-learn` (SMOTE)
+- **Serving Layer**: FastAPI
+- **Dashboard**: Streamlit
+- **Experiment Tracking**: Weights & Biases (Optional)
