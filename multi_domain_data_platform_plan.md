@@ -159,3 +159,14 @@ visible in a single dashboard.
 > forecasting (energy demand via Prophet, RMSE/MAE-evaluated, weekly retraining), and
 > real-time fraud classification (imbalanced-class handling via SMOTE, precision/recall/
 > PR-AUC evaluated) — served through one shared API and monitored via a unified dashboard."
+
+One sentence, three data patterns, real SQL depth, a time-series project (closing that
+blind spot), correct handling of class imbalance, and orchestration — versus three
+separate, thinner bullets for three disconnected scripts.
+
+## What this deliberately doesn't include
+
+No Kubernetes, no LLM/agent components, no vector stores — this project is specifically
+about classical data engineering + ML serving fundamentals, which is a different muscle
+from your RAG/agent projects. Keeping it focused on that is the point; don't blend it
+with your LLM work just because you can.
