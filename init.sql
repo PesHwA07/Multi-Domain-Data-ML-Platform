@@ -44,3 +44,14 @@ CREATE TABLE IF NOT EXISTS fraud.transactions (
     amount FLOAT,
     timestamp TIMESTAMP,
     features FLOAT[], -- Array to hold V1-V28 PCA features
+    is_fraud BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS fraud.predictions_log (
+    log_id SERIAL PRIMARY KEY,
+    transaction_id VARCHAR,
+    predicted_probability FLOAT,
+    predicted_class BOOLEAN,
+    latency_ms FLOAT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
