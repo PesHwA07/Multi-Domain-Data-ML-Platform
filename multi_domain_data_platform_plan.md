@@ -23,3 +23,20 @@ depth (currently "listed, not proven") and time-series (currently a total blank)
                      │   Airflow (orchestrator)  │
                      └───────────┬─────────────┘
                                  │
+      ┌──────────────────┬──────┴───────────┬──────────────────┐
+      │                  │                  │                  │
+┌─────▼─────┐     ┌──────▼──────┐   ┌───────▼──────┐   ┌───────▼──────┐
+│ Spotify   │     │  PJM Energy  │   │ Credit Card  │   │  Shared      │
+│ ETL DAG   │     │  Forecast    │   │ Fraud Train  │   │  PostgreSQL  │
+│ (batch,   │     │  DAG (train  │   │ DAG (retrain │◄──┤  (all 3      │
+│ daily)    │     │  Prophet,    │   │  classifier) │   │  schemas)    │
+└───────────┘     │  weekly)     │   └──────────────┘   └──────┬───────┘
+                   └──────────────┘                             │
+                                                          ┌──────▼───────┐
+                                                          │  FastAPI      │
+                                                          │  /forecast/energy
+                                                          │  /predict/fraud
+                                                          └──────┬───────┘
+                                                                 │
+                                                          ┌──────▼───────┐
+                                                          │  Streamlit    │
