@@ -91,3 +91,20 @@ analytical queries return sensible results.
 
 ## Week 2 — Time-series forecasting pipeline
 
+- [ ] Ingest PJM hourly energy consumption dataset into `energy.hourly_readings`
+- [ ] Preprocessing: handle missing hours, resample, train/test split respecting time
+      order (no random shuffling — a common time-series mistake worth explicitly avoiding
+      and mentioning you avoided)
+- [ ] Train **Prophet** as your primary model, and a simple **ARIMA** baseline for
+      comparison — being able to say "I compared against a classical baseline" is a good
+      signal
+- [ ] Evaluate with RMSE and MAE, store forecasts + actuals in `energy.forecasts`
+- [ ] Wrap training as a second Airflow DAG, scheduled weekly (retrain as new data arrives)
+- [ ] Add a simple anomaly flag: if actual deviates from forecast band by more than N%,
+      log it — small addition, ties back to the "real-time alerting" angle from the
+      original idea without needing a separate system
+
+**Milestone:** forecasting DAG runs weekly, RMSE/MAE logged, forecast-vs-actual data
+queryable in Postgres.
+
+---
