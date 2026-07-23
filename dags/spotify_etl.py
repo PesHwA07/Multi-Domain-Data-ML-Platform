@@ -23,3 +23,20 @@ def extract_spotify_data():
     
     # Load into tracks_raw staging table
     engine = create_engine(DB_URL)
+    with engine.begin() as conn:
+        # We use if_exists='replace' for the raw table to ensure idempotency (reruns are safe)
+        df.to_sql(
+            name='tracks_raw',
+            schema='spotify',
+            con=conn,
+            if_exists='replace',
+            index=False
+        )
+    print("Successfully loaded raw data into spotify.tracks_raw")
+
+
+def transform_and_load_spotify_data():
+    """
+    Day 4: Transform & Load
+    Reads from `spotify.tracks_raw`, cleans data, derives features,
+    and loads into `spotify.tracks_clean`.
