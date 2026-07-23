@@ -20,3 +20,20 @@ SELECT
     ROUND(AVG(danceability)::numeric, 3) as avg_danceability,
     ROUND(AVG(energy)::numeric, 3) as avg_energy,
     ROUND(AVG(popularity)::numeric, 2) as avg_popularity,
+    COUNT(*) as total_tracks
+FROM spotify.tracks_clean
+GROUP BY decade
+ORDER BY decade ASC;
+
+-- 3. Most Energetic Artists (Minimum of 5 tracks)
+-- Demonstrates GROUP BY with HAVING clause filtering
+SELECT 
+    artist,
+    COUNT(*) as track_count,
+    ROUND(AVG(energy)::numeric, 3) as avg_energy
+FROM spotify.tracks_clean
+GROUP BY artist
+HAVING COUNT(*) >= 5
+ORDER BY avg_energy DESC
+LIMIT 15;
+
