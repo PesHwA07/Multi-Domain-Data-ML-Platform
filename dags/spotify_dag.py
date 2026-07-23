@@ -25,3 +25,14 @@ with DAG(
 ) as dag:
 
     extract_task = PythonOperator(
+        task_id='extract_raw_data',
+        python_callable=extract_spotify_data,
+    )
+
+    transform_load_task = PythonOperator(
+        task_id='transform_and_load_data',
+        python_callable=transform_and_load_spotify_data,
+    )
+
+    # Define task dependencies (Extract -> Transform/Load)
+    extract_task >> transform_load_task
