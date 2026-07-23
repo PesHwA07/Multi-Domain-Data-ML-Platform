@@ -40,3 +40,20 @@ def transform_and_load_spotify_data():
     Day 4: Transform & Load
     Reads from `spotify.tracks_raw`, cleans data, derives features,
     and loads into `spotify.tracks_clean`.
+    """
+    engine = create_engine(DB_URL)
+    
+    print("Reading from spotify.tracks_raw...")
+    df = pd.read_sql("SELECT * FROM spotify.tracks_raw", engine)
+    
+    print(f"Initial raw rows: {len(df)}")
+    
+    # Transform: clean nulls
+    df = df.dropna(subset=['track_id', 'track_name', 'artists'])
+    
+    # Transform: deduplicate by track_id
+    df = df.drop_duplicates(subset=['track_id'])
+    
+    # Transform: derive 'decade' feature
+    # Since the Kaggle dataset doesn't include a release year, we simulate one 
+    # deterministically based on track_id hash for consistent dashboard queries.
