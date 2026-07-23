@@ -55,3 +55,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 
 # 3. Application Flow
 
+## 3.1 ETL Workflow (Spotify)
+1. **Trigger**: Scheduled daily Airflow DAG.
+2. **Extract**: Load raw Spotify tracks CSV.
+3. **Transform**: Clean nulls, normalize metrics, deduplicate, derive new features.
+4. **Load**: Insert transformed data into `spotify.tracks_clean`.
+
+## 3.2 Forecasting Workflow (Energy)
+1. **Trigger**: Scheduled weekly Airflow DAG.
+2. **Extract**: Fetch latest PJM hourly data.
+3. **Transform**: Handle missing hours, resample, split train/test sequentially.
+4. **Train**: Fit Prophet & ARIMA models.
+5. **Evaluate & Load**: Calculate RMSE/MAE, flag anomalies, insert forecasts into `energy.forecasts`.
+
+## 3.3 Fraud Detection Workflow (Credit Card)
+1. **Trigger**: Periodic/weekly Airflow DAG.
+2. **Extract**: Load new credit card transactions.
+3. **Train**: Apply SMOTE for imbalance, train Random Forest/Logistic Regression.
