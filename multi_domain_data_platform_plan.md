@@ -74,3 +74,20 @@ the new material is concentrated in Airflow orchestration and the two new data d
       template as a base, trim it down)
 - [ ] Design schemas: `spotify.tracks_raw`, `spotify.tracks_clean`, `energy.hourly_readings`,
       `energy.forecasts`, `fraud.transactions`, `fraud.predictions`
+- [ ] Download Spotify Tracks dataset, write ETL logic:
+      - **Extract**: read CSV
+      - **Transform**: clean nulls, normalize `danceability`/`energy`/`popularity`,
+        dedupe, derive features (e.g., `decade` from release year)
+      - **Load**: write to `spotify.tracks_clean` in Postgres
+- [ ] Wrap as an Airflow DAG, scheduled daily, with basic retry/failure alerting
+- [ ] Write 3–5 analytical SQL queries against the loaded data (e.g., "top genres by
+      average energy," "popularity trend by decade") — this is the part that actually
+      proves real SQL depth, not just "I loaded data into a table"
+
+**Milestone:** Airflow DAG runs on schedule, Spotify data lands cleaned in Postgres,
+analytical queries return sensible results.
+
+---
+
+## Week 2 — Time-series forecasting pipeline
+
