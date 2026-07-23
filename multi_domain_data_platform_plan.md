@@ -40,3 +40,20 @@ depth (currently "listed, not proven") and time-series (currently a total blank)
                                                                  │
                                                           ┌──────▼───────┐
                                                           │  Streamlit    │
+                                                          │  monitoring   │
+                                                          │  dashboard    │
+                                                          └───────────────┘
+```
+
+One orchestrator, one database (three schemas), one serving layer, one dashboard —
+three genuinely different data engineering patterns running through it.
+
+---
+
+## Tech stack
+
+| Component | Tool | Cost |
+|---|---|---|
+| Orchestration | Apache Airflow (Docker) | Free, self-hosted |
+| Storage | PostgreSQL (Docker) | Free, self-hosted |
+| Forecasting model | Prophet (or ARIMA as a baseline comparison) | Free |
