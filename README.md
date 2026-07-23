@@ -1,15 +1,49 @@
-# Multi-Domain Data ML Platform
+# Multi-Domain Data & ML Platform
 
-A comprehensive, containerized data engineering and machine learning serving platform that processes multiple distinct datasets (Spotify, Energy, and Fraud). The platform is orchestrated via Apache Airflow, stores transformed data in PostgreSQL, and serves data via a FastAPI backend.
+*One shared architecture, three different data patterns — batch ETL, time-series forecasting, real-time serving.*
 
 ## Architecture
 
-- **PostgreSQL**: Central data warehouse hosting schemas for `spotify`, `energy`, and `fraud`.
-- **Apache Airflow**: Orchestrates the ETL pipelines to extract raw datasets, perform Pandas-based transformations, and load them into PostgreSQL.
-- **FastAPI**: Serves the transformed data and analytical queries to upstream dashboards.
-- **Docker**: The entire stack is containerized for reproducible local development.
+```text
+                     ┌─────────────────────────┐
+                     │   Airflow (orchestrator)  │
+                     └───────────┬─────────────┘
+                                 │
+      ┌──────────────────┬──────┴───────────┬──────────────────┐
+      │                  │                  │                  │
+┌─────▼─────┐     ┌──────▼──────┐   ┌───────▼──────┐   ┌───────▼──────┐
+│ Spotify   │     │  PJM Energy │   │ Credit Card  │   │  Shared      │
+│ ETL DAG   │     │  Forecast   │   │ Fraud Train  │   │  PostgreSQL  │
+│ (batch,   │     │  DAG (train │   │ DAG (retrain │◄──┤  (all 3      │
+│ daily)    │     │  Prophet,   │   │  classifier) │   │  schemas)    │
+└───────────┘     │  weekly)    │   └──────────────┘   └──────┬───────┘
+                   └──────────────┘                             │
+                                                          ┌──────▼───────┐
+                                                          │  FastAPI     │
+                                                          │  /forecast/  │
+                                                          │  /predict/   │
+                                                          └──────┬───────┘
+                                                                 │
+                                                          ┌──────▼───────┐
+                                                          │  Streamlit   │
+                                                          │  monitoring  │
+                                                          │  dashboard   │
+                                                          └──────────────┘
+```
 
----
+One orchestrator, one database (three schemas), one serving layer, one dashboard — three genuinely different data engineering patterns running through it.
+
+## Tech Stack
+
+| Component | Tool |
+|---|---|
+| Orchestration | Apache Airflow (Docker) |
+| Storage | PostgreSQL (Docker) |
+| Forecasting model | Prophet (or ARIMA as baseline) |
+| Fraud model | Random Forest / Logistic Regression + `imbalanced-learn` (SMOTE) |
+| Serving | FastAPI |
+| Monitoring dashboard | Streamlit |
+| Containerization | Docker Compose |
 
 ## Dataset Setup & API Keys
 
@@ -46,8 +80,6 @@ Instead, the platform uses `kagglehub` in `scripts/fetch_data.py` to pull the da
    ```
    This will securely download the public datasets and place them into the `data/raw/` directory, which is ignored by Git but mounted to the Airflow container.
 
----
-
 ## Running the Platform
 
 1. Ensure Docker Desktop is running.
@@ -56,3 +88,7 @@ Instead, the platform uses `kagglehub` in `scripts/fetch_data.py` to pull the da
    docker-compose up -d
    ```
 3. Access the Airflow UI at `http://localhost:8080` to trigger your DAGs.
+
+## What this demonstrates
+This repository demonstrates a complete data engineering lifecycle:
+> "Built a multi-domain data platform (Airflow + PostgreSQL + FastAPI) handling three distinct patterns: batch ETL (Spotify track data, scheduled daily), time-series forecasting (energy demand via Prophet, RMSE/MAE-evaluated, weekly retraining), and real-time fraud classification (imbalanced-class handling via SMOTE, precision/recall/PR-AUC evaluated) — served through one shared API and monitored via a unified dashboard."
