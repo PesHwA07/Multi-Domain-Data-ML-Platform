@@ -140,3 +140,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
   - `predicted_probability` (FLOAT)
   - `predicted_class` (BOOLEAN)
   - `latency_ms` (FLOAT)
+  - `timestamp` (TIMESTAMP)
+
+---
+
+# 6. Implementation Plan
+
+This plan breaks down the 4-week build into day-by-day actionable steps.
+
+## Week 1: Infra + Spotify Batch ETL
+- **Day 1**: Setup Docker environment. Create `docker-compose.yml` for PostgreSQL, Airflow, and FastAPI.
+- **Day 2**: Database setup. Run init scripts to create `spotify`, `energy`, and `fraud` schemas.
+- **Day 3**: Spotify ETL logic (Extract). Write python scripts to load CSV into `tracks_raw`.
+- **Day 4**: Spotify ETL logic (Transform & Load). Clean nulls, dedupe, calculate features (`decade`), and load into `tracks_clean`.
+- **Day 5**: Airflow DAG. Wrap Spotify ETL into an Airflow DAG scheduled daily with basic retries.
+- **Day 6**: Analytical Queries. Write and test 3-5 analytical SQL queries against the Spotify data.
+- **Day 7**: Testing & Review. Ensure Airflow triggers correctly and data lands in Postgres as expected.
+
