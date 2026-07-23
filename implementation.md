@@ -106,3 +106,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 ## 5.1 Schema: `spotify`
 - **`tracks_raw`**: Staging table for initial ingestion.
 - **`tracks_clean`**: 
+  - `track_id` (PK, VARCHAR)
+  - `name` (VARCHAR)
+  - `artist` (VARCHAR)
+  - `danceability` (FLOAT)
+  - `energy` (FLOAT)
+  - `popularity` (FLOAT)
+  - `decade` (INT)
+  - `updated_at` (TIMESTAMP)
+
+## 5.2 Schema: `energy`
+- **`hourly_readings`**:
+  - `timestamp` (PK, TIMESTAMP)
+  - `consumption` (FLOAT)
+- **`forecasts`**:
+  - `forecast_timestamp` (PK, TIMESTAMP)
+  - `predicted_consumption` (FLOAT)
+  - `lower_band` (FLOAT)
