@@ -142,3 +142,20 @@ forecast-lookup endpoint, backed by models trained via Airflow.
       instructions, example queries/API calls
 - [ ] **Optional stretch, closes the cloud gap from your role analysis:** deploy the
       Postgres + FastAPI portion to one free-tier cloud instance (AWS RDS free tier +
+      EC2 free tier, or GCP equivalent) instead of only local Docker — gives you a
+      legitimate "deployed on AWS/GCP" line without new architecture, just a new host
+- [ ] Record a 2-minute walkthrough: trigger a DAG manually, show data land in Postgres,
+      hit both API endpoints, show the dashboard update
+
+**Milestone:** one coherent platform, demoable end-to-end, with all three data patterns
+visible in a single dashboard.
+
+---
+
+## Resume bullet this produces
+
+> "Built a multi-domain data platform (Airflow + PostgreSQL + FastAPI) handling three
+> distinct patterns: batch ETL (Spotify track data, scheduled daily), time-series
+> forecasting (energy demand via Prophet, RMSE/MAE-evaluated, weekly retraining), and
+> real-time fraud classification (imbalanced-class handling via SMOTE, precision/recall/
+> PR-AUC evaluated) — served through one shared API and monitored via a unified dashboard."
