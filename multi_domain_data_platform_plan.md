@@ -57,3 +57,20 @@ three genuinely different data engineering patterns running through it.
 | Orchestration | Apache Airflow (Docker) | Free, self-hosted |
 | Storage | PostgreSQL (Docker) | Free, self-hosted |
 | Forecasting model | Prophet (or ARIMA as a baseline comparison) | Free |
+| Fraud model | Random Forest / Logistic Regression + `imbalanced-learn` (SMOTE) | Free — reuses your existing classical ML skill from CS:GO |
+| Serving | FastAPI | Free — reuses your Week 8 RAG deployment skill |
+| Monitoring dashboard | Streamlit | Free — reuses your Week 6 RAG dashboard skill |
+| Experiment tracking | Weights & Biases (optional, reuse from RAG project) | Free tier |
+| Containerization | Docker Compose (Postgres + Airflow + FastAPI in one stack) | Free |
+
+Notice most of the "serving/dashboard/tracking" row is **skill reuse**, not new learning —
+the new material is concentrated in Airflow orchestration and the two new data domains.
+
+---
+
+## Week 1 — Infra + Spotify batch ETL
+
+- [ ] `docker-compose.yml` with Postgres + Airflow (use the official Airflow docker-compose
+      template as a base, trim it down)
+- [ ] Design schemas: `spotify.tracks_raw`, `spotify.tracks_clean`, `energy.hourly_readings`,
+      `energy.forecasts`, `fraud.transactions`, `fraud.predictions`
