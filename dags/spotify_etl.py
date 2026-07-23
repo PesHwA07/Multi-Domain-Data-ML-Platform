@@ -74,3 +74,20 @@ def transform_and_load_spotify_data():
         'popularity': df['popularity'],
         'decade': df['decade']
     })
+    
+    print(f"Transformed data: {len(clean_df)} valid tracks.")
+    
+    # Load into tracks_clean (truncate and append to preserve schema/PKs defined in init.sql)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE spotify.tracks_clean;"))
+        clean_df.to_sql(
+            name='tracks_clean',
+            schema='spotify',
+            con=conn,
+            if_exists='append',
+            index=False
+        )
+    print("Successfully loaded clean data into spotify.tracks_clean")
+
+
+if __name__ == "__main__":
