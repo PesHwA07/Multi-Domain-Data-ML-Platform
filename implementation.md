@@ -89,3 +89,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 - **Idempotency**: All Airflow DAGs must be idempotent, allowing safe reruns on failure.
 - **Reproducibility**: Containerized via `docker-compose` to ensure local environments mirror production.
 
+## 4.2 API Design
+- **RESTful standard**: Endpoints should be intuitive (`/predict/fraud`, `/forecast/energy`).
+- **Validation**: Use Pydantic models in FastAPI for strict request/response validation.
+- **Error Handling**: Graceful degradation and informative HTTP status codes.
+
+## 4.3 UI/UX (Streamlit Dashboard)
+- **Tabbed Interface**: Keep domains logically separated (Spotify, Energy, Fraud).
+- **Visual Hierarchy**: Highlight primary KPIs (e.g., Data Freshness, F1-Score, RMSE) at the top, followed by granular charts and logs below.
+- **Clarity**: Use clear titles, axes labels, and legends on all charts.
+
+---
+
+# 5. Database Schema
+
+## 5.1 Schema: `spotify`
+- **`tracks_raw`**: Staging table for initial ingestion.
+- **`tracks_clean`**: 
