@@ -108,3 +108,20 @@ analytical queries return sensible results.
 queryable in Postgres.
 
 ---
+
+## Week 3 — Fraud detection + real-time serving
+
+- [ ] Load credit card fraud dataset into `fraud.transactions`
+- [ ] Train classifier (Random Forest + Logistic Regression, same comparison approach as
+      CS:GO) — this dataset is heavily imbalanced (fraud is <1% of transactions), so
+      apply and document **SMOTE or class-weighting**, and evaluate with **precision/recall/
+      F1 and PR-AUC**, not accuracy (accuracy is meaningless on this class distribution —
+      explicitly noting this in your README shows you understand why)
+- [ ] Wrap training as a third Airflow DAG (periodic retrain)
+- [ ] Build the shared **FastAPI** service with two endpoints:
+      - `POST /predict/fraud` — takes a transaction, returns fraud probability + flag
+      - `GET /forecast/energy` — returns latest forecast for a given hour range
+- [ ] Log every prediction request (input, output, latency) to Postgres for the
+      dashboard to read
+
+**Milestone:** one FastAPI service serves both a real-time classification endpoint and a
