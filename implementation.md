@@ -174,3 +174,12 @@ This plan breaks down the 4-week build into day-by-day actionable steps.
 - **Day 19**: FastAPI Setup. Initialize FastAPI project and define Pydantic models for endpoints.
 - **Day 20**: API Endpoints. Implement `POST /predict/fraud` and `GET /forecast/energy`.
 - **Day 21**: API Logging & Testing. Ensure all requests log input/output/latency to `fraud.predictions_log`. Test API thoroughly.
+
+## Week 4: Unified Dashboard + Polish
+- **Day 22**: Streamlit Setup. Initialize dashboard, connect to Postgres.
+- **Day 23**: Dashboard (Spotify & Airflow). Add tabs for Spotify analytics and Airflow DAG run history.
+- **Day 24**: Dashboard (Energy & Fraud). Add tabs visualizing forecast vs actuals, and fraud prediction metrics.
+- **Day 25**: Refactoring. Clean up code, add docstrings, ensure PEP8 compliance across project.
+- **Day 26**: Documentation. Write final README.md with architecture diagram and setup instructions.
+- **Day 27**: Cloud Deployment (Optional). Deploy PostgreSQL and FastAPI to AWS RDS/EC2 free tier.
+- **Day 28**: Final Polish & Walkthrough. Record 2-minute demo video showing end-to-end flow.
