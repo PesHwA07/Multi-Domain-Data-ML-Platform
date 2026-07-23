@@ -125,3 +125,20 @@ queryable in Postgres.
       dashboard to read
 
 **Milestone:** one FastAPI service serves both a real-time classification endpoint and a
+forecast-lookup endpoint, backed by models trained via Airflow.
+
+---
+
+## Week 4 — Unified dashboard + polish
+
+- [ ] Streamlit dashboard with three tabs:
+      - **Spotify**: data freshness, row counts, a couple of the analytical query results
+        as charts
+      - **Energy**: forecast vs. actual chart, RMSE/MAE trend over retraining runs
+      - **Fraud**: precision/recall/F1 over retraining runs, recent prediction log
+- [ ] Add DAG run history (success/failure, duration) to the dashboard — ties the
+      orchestration layer to something visible, not just running invisibly in Airflow's UI
+- [ ] README: architecture diagram, why one platform instead of three scripts, setup
+      instructions, example queries/API calls
+- [ ] **Optional stretch, closes the cloud gap from your role analysis:** deploy the
+      Postgres + FastAPI portion to one free-tier cloud instance (AWS RDS free tier +
