@@ -157,3 +157,20 @@ This plan breaks down the 4-week build into day-by-day actionable steps.
 - **Day 6**: Analytical Queries. Write and test 3-5 analytical SQL queries against the Spotify data.
 - **Day 7**: Testing & Review. Ensure Airflow triggers correctly and data lands in Postgres as expected.
 
+## Week 2: Time-Series Forecasting Pipeline (Energy)
+- **Day 8**: Data Ingestion. Write script to ingest PJM hourly data into `energy.hourly_readings`.
+- **Day 9**: Preprocessing. Handle missing values, resample, and perform sequential train/test split.
+- **Day 10**: Modeling (Baseline). Train ARIMA baseline model and record metrics.
+- **Day 11**: Modeling (Prophet). Train Prophet model, compare against ARIMA, calculate RMSE/MAE.
+- **Day 12**: Evaluation & Storage. Save predictions to `energy.forecasts` with anomaly flags.
+- **Day 13**: Airflow DAG. Wrap training and forecasting script into a weekly Airflow DAG.
+- **Day 14**: Testing & Review. Verify model metrics are tracked and forecasts are queryable in DB.
+
+## Week 3: Fraud Detection + Real-Time Serving
+- **Day 15**: Data Ingestion. Load credit card fraud dataset into `fraud.transactions`.
+- **Day 16**: Preprocessing & SMOTE. Handle class imbalance using `imbalanced-learn`.
+- **Day 17**: Modeling. Train Random Forest / Logistic Regression. Evaluate using Precision, Recall, F1, PR-AUC.
+- **Day 18**: Airflow DAG. Wrap fraud model retraining into an Airflow DAG.
+- **Day 19**: FastAPI Setup. Initialize FastAPI project and define Pydantic models for endpoints.
+- **Day 20**: API Endpoints. Implement `POST /predict/fraud` and `GET /forecast/energy`.
+- **Day 21**: API Logging & Testing. Ensure all requests log input/output/latency to `fraud.predictions_log`. Test API thoroughly.
