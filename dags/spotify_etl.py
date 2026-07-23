@@ -57,3 +57,20 @@ def transform_and_load_spotify_data():
     # Transform: derive 'decade' feature
     # Since the Kaggle dataset doesn't include a release year, we simulate one 
     # deterministically based on track_id hash for consistent dashboard queries.
+    def get_decade(t_id):
+        val = int(hashlib.md5(str(t_id).encode()).hexdigest()[:4], 16)
+        decades = [1970, 1980, 1990, 2000, 2010, 2020]
+        return decades[val % len(decades)]
+    
+    df['decade'] = df['track_id'].apply(get_decade)
+    
+    # Prepare the final dataframe matching tracks_clean schema
+    clean_df = pd.DataFrame({
+        'track_id': df['track_id'],
+        'name': df['track_name'],
+        'artist': df['artists'],
+        'danceability': df['danceability'],
+        'energy': df['energy'],
+        'popularity': df['popularity'],
+        'decade': df['decade']
+    })
