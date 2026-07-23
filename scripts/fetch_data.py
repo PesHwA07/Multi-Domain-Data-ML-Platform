@@ -37,3 +37,15 @@ def main():
     
     # 2. PJM Hourly Energy Consumption
     energy_dir = os.path.join(data_raw_dir, 'energy')
+    fetch_and_copy("robikscube/hourly-energy-consumption", energy_dir)
+    print("-" * 50)
+    
+    # 3. Credit Card Fraud
+    fraud_dir = os.path.join(data_raw_dir, 'fraud')
+    fetch_and_copy("mlg-ulb/creditcardfraud", fraud_dir)
+    print("-" * 50)
+    
+    print("\nAll datasets have been successfully downloaded to data/raw/")
+
+if __name__ == "__main__":
+    main()
