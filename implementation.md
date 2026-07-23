@@ -38,3 +38,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
 - **Serving Layer**: FastAPI
 - **Dashboard**: Streamlit
 - **Experiment Tracking**: Weights & Biases (Optional)
+- **Infrastructure**: Docker Compose
+
+## 2.2 System Architecture
+- **Airflow**: Manages 3 separate DAGs (Spotify Batch, Energy Train/Forecast, Fraud Retrain).
+- **PostgreSQL**: Central storage layer acting as the Data Warehouse and Model Registry data store.
+- **FastAPI**: Pulls forecasts and runs fraud predictions based on the latest models/data in PostgreSQL.
+- **Streamlit**: Queries PostgreSQL directly to visualize metrics and logs.
+
+## 2.3 Data Flow
+- **Ingestion**: Airflow DAGs pull from CSVs/APIs into Raw schemas.
+- **Transformation**: Python/Pandas logic orchestrates cleaning and writes to Clean/Serving schemas.
+- **Inference**: FastAPI receives HTTP requests, processes through models loaded in memory (or pulls from DB), and logs to DB.
+
+---
+
+# 3. Application Flow
+
