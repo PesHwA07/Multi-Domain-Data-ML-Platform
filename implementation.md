@@ -123,3 +123,20 @@ The Multi-Domain Data & ML Platform is a unified system designed to handle three
   - `forecast_timestamp` (PK, TIMESTAMP)
   - `predicted_consumption` (FLOAT)
   - `lower_band` (FLOAT)
+  - `upper_band` (FLOAT)
+  - `model_version` (VARCHAR)
+  - `anomaly_flag` (BOOLEAN)
+
+## 5.3 Schema: `fraud`
+- **`transactions`**:
+  - `transaction_id` (PK, VARCHAR)
+  - `amount` (FLOAT)
+  - `timestamp` (TIMESTAMP)
+  - `features_1_to_n` (FLOAT)
+  - `is_fraud` (BOOLEAN)
+- **`predictions_log`**:
+  - `log_id` (PK, SERIAL)
+  - `transaction_id` (VARCHAR)
+  - `predicted_probability` (FLOAT)
+  - `predicted_class` (BOOLEAN)
+  - `latency_ms` (FLOAT)
