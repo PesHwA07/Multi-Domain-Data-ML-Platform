@@ -91,3 +91,10 @@ def transform_and_load_spotify_data():
 
 
 if __name__ == "__main__":
+    # Note: If running this directly on your host machine, you will need to change 
+    # file_path to './data/raw/spotify/dataset.csv' and DB_URL to localhost.
+    # This is designed to be executed by Airflow in the Docker container.
+    
+    # extract_spotify_data()
+    # transform_and_load_spotify_data()
+    pass
