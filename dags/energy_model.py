@@ -1,3 +1,11 @@
+"""
+Energy Modeling and Forecasting DAG
+===================================
+This module handles the extraction, preprocessing, baseline modeling (ARIMA), 
+advanced modeling (Prophet), and anomaly detection for PJM energy data. 
+It is orchestrated as a weekly Airflow DAG.
+"""
+
 import pandas as pd
 from sqlalchemy import create_engine
 
