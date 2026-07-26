@@ -75,7 +75,45 @@ def train_arima_baseline():
     
     return fitted_model, predictions
 
+from prophet import Prophet
+
+def train_prophet_model():
+    """
+    Day 11: Prophet Modeling
+    Trains a Facebook Prophet model, evaluates it against the test set,
+    and calculates final RMSE/MAE metrics.
+    """
+    train_df, test_df = preprocess_energy_data()
+    
+    # Prophet strictly requires columns named 'ds' (datestamp) and 'y' (target)
+    # Our data currently has 'timestamp' as the index and 'consumption' as the column
+    prophet_train = train_df.reset_index().rename(columns={'timestamp': 'ds', 'consumption': 'y'})
+    prophet_test = test_df.reset_index().rename(columns={'timestamp': 'ds', 'consumption': 'y'})
+    
+    print("Training Prophet model...")
+    model = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=True,
+        daily_seasonality=True
+    )
+    model.fit(prophet_train)
+    
+    print("Generating forecasts for the test set...")
+    forecast = model.predict(prophet_test[['ds']])
+    
+    # Calculate Evaluation Metrics
+    rmse = np.sqrt(mean_squared_error(prophet_test['y'].values, forecast['yhat'].values))
+    mae = mean_absolute_error(prophet_test['y'].values, forecast['yhat'].values)
+    
+    print(f"--- Prophet Metrics ---")
+    print(f"RMSE: {rmse:.2f}")
+    print(f"MAE:  {mae:.2f}")
+    print(f"-----------------------")
+    
+    return model, forecast, prophet_test
+
 if __name__ == "__main__":
-    # Test the preprocessing logic (requires DB_URL to point to localhost if run outside Docker)
+    # Note: If running locally, DB_URL must point to localhost.
     # train_arima_baseline()
+    # train_prophet_model()
     pass
