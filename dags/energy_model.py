@@ -154,9 +154,38 @@ def evaluate_and_store(forecast, actual_df):
         
     print("Successfully saved predictions and anomalies to energy.forecasts.")
 
-if __name__ == "__main__":
-    # Note: If running locally, DB_URL must point to localhost.
-    # train_arima_baseline()
-    # model, forecast, test_df = train_prophet_model()
-    # evaluate_and_store(forecast, test_df)
-    pass
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+
+def run_energy_forecasting_pipeline():
+    """Executes the complete energy forecasting and evaluation pipeline."""
+    # We optionally train the baseline just to log metrics, but rely on Prophet for the actual forecast
+    train_arima_baseline()
+    model, forecast, test_df = train_prophet_model()
+    evaluate_and_store(forecast, test_df)
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+# Wrap the pipeline into an Airflow DAG running on a weekly schedule
+with DAG(
+    'energy_forecasting_weekly',
+    default_args=default_args,
+    description='A weekly DAG to retrain the Prophet energy model and store anomaly-flagged forecasts',
+    schedule_interval='@weekly',
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    tags=['energy', 'ml', 'prophet'],
+) as dag:
+    
+    forecast_task = PythonOperator(
+        task_id='train_and_forecast_energy',
+        python_callable=run_energy_forecasting_pipeline,
+    )
