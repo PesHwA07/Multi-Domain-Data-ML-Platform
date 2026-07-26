@@ -112,8 +112,51 @@ def train_prophet_model():
     
     return model, forecast, prophet_test
 
+from sqlalchemy import text
+
+def evaluate_and_store(forecast, actual_df):
+    """
+    Day 12: Evaluation & Storage
+    Flags anomalies where actual consumption falls outside Prophet's confidence bands,
+    and stores the final forecast data into the energy.forecasts PostgreSQL table.
+    """
+    # Merge the forecast with the actual test data on the timestamp ('ds')
+    merged = pd.merge(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']], 
+                      actual_df[['ds', 'y']], 
+                      on='ds', 
+                      how='inner')
+    
+    # An anomaly occurs if actual 'y' is > upper_band or < lower_band
+    merged['anomaly_flag'] = (merged['y'] > merged['yhat_upper']) | (merged['y'] < merged['yhat_lower'])
+    
+    print(f"Detected {merged['anomaly_flag'].sum()} anomalies out of {len(merged)} test hours.")
+    
+    # Prepare the DataFrame for SQL insertion according to the schema
+    db_df = pd.DataFrame({
+        'forecast_timestamp': merged['ds'],
+        'predicted_consumption': merged['yhat'],
+        'lower_band': merged['yhat_lower'],
+        'upper_band': merged['yhat_upper'],
+        'model_version': 'Prophet-v1.0',
+        'anomaly_flag': merged['anomaly_flag']
+    })
+    
+    engine = create_engine(DB_URL)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE energy.forecasts;"))
+        db_df.to_sql(
+            name='forecasts',
+            schema='energy',
+            con=conn,
+            if_exists='append',
+            index=False
+        )
+        
+    print("Successfully saved predictions and anomalies to energy.forecasts.")
+
 if __name__ == "__main__":
     # Note: If running locally, DB_URL must point to localhost.
     # train_arima_baseline()
-    # train_prophet_model()
+    # model, forecast, test_df = train_prophet_model()
+    # evaluate_and_store(forecast, test_df)
     pass
