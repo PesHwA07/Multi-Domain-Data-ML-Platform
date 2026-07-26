@@ -45,7 +45,37 @@ def preprocess_energy_data():
     # Returning the dataframes to be passed to the modeling functions (Prophet/ARIMA)
     return train_df, test_df
 
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+import numpy as np
+
+def train_arima_baseline():
+    """
+    Day 10: Baseline Modeling
+    Trains an ARIMA baseline model on the training set and evaluates it.
+    """
+    train_df, test_df = preprocess_energy_data()
+    
+    print("Training ARIMA baseline model (order=1,1,1)...")
+    # We use a simple order for the baseline.
+    model = ARIMA(train_df['consumption'].values, order=(1, 1, 1))
+    fitted_model = model.fit()
+    
+    print("Generating forecasts for the test set...")
+    predictions = fitted_model.forecast(steps=len(test_df))
+    
+    # Calculate Evaluation Metrics
+    rmse = np.sqrt(mean_squared_error(test_df['consumption'].values, predictions))
+    mae = mean_absolute_error(test_df['consumption'].values, predictions)
+    
+    print(f"--- ARIMA Baseline Metrics ---")
+    print(f"RMSE: {rmse:.2f}")
+    print(f"MAE:  {mae:.2f}")
+    print(f"------------------------------")
+    
+    return fitted_model, predictions
+
 if __name__ == "__main__":
     # Test the preprocessing logic (requires DB_URL to point to localhost if run outside Docker)
-    # train, test = preprocess_energy_data()
+    # train_arima_baseline()
     pass
