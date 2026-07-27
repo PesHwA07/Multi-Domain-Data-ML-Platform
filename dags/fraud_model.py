@@ -55,7 +55,60 @@ def preprocess_and_smote():
     # Return the balanced training set and the untouched testing set
     return X_train_resampled, X_test, y_train_resampled, y_test
 
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import precision_score, recall_score, f1_score, average_precision_score
+import joblib
+import os
+
+def train_and_evaluate_fraud_model():
+    """
+    Day 17: Modeling & Evaluation
+    Trains a Random Forest classifier on the SMOTE-balanced training data,
+    evaluates it on the untouched test set using strict fraud metrics (F1, PR-AUC),
+    and saves the model artifact for the FastAPI serving layer.
+    """
+    X_train_resampled, X_test, y_train_resampled, y_test = preprocess_and_smote()
+    
+    if X_train_resampled is None:
+        return
+        
+    print("Initializing Random Forest Classifier...")
+    # Limiting depth and estimators to keep Airflow task execution time reasonable
+    clf = RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1)
+    
+    print("Fitting model to SMOTE-balanced training data (this may take a moment)...")
+    clf.fit(X_train_resampled, y_train_resampled)
+    
+    print("Generating predictions on untouched test set...")
+    y_pred = clf.predict(X_test)
+    y_probs = clf.predict_proba(X_test)[:, 1]
+    
+    print("Calculating strict fraud evaluation metrics...")
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    pr_auc = average_precision_score(y_test, y_probs)
+    
+    print(f"--- Fraud Model Metrics ---")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall:    {recall:.4f}")
+    print(f"F1-Score:  {f1:.4f}")
+    print(f"PR-AUC:    {pr_auc:.4f}")
+    print(f"---------------------------")
+    
+    # Save the model artifact to the shared data volume for FastAPI to consume
+    model_path = "/opt/airflow/data/fraud_rf_model.joblib"
+    if not os.path.exists(os.path.dirname(model_path)):
+        # Local fallback
+        model_path = os.path.join(os.path.dirname(__file__), '../data/fraud_rf_model.joblib')
+        
+    print(f"Saving model artifact to {model_path}...")
+    joblib.dump(clf, model_path)
+    print("Model successfully saved!")
+    
+    return clf
+
 if __name__ == "__main__":
     # Test execution block
-    # preprocess_and_smote()
+    # train_and_evaluate_fraud_model()
     pass
