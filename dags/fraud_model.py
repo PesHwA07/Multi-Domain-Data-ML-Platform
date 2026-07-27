@@ -108,7 +108,31 @@ def train_and_evaluate_fraud_model():
     
     return clf
 
-if __name__ == "__main__":
-    # Test execution block
-    # train_and_evaluate_fraud_model()
-    pass
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=10),
+}
+
+# Wrap the model retraining process into an automated weekly DAG
+with DAG(
+    'fraud_model_retraining_weekly',
+    default_args=default_args,
+    description='A weekly DAG to retrain the Random Forest fraud classification model with SMOTE',
+    schedule_interval='@weekly',
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    tags=['fraud', 'ml', 'random-forest'],
+) as dag:
+    
+    retrain_model_task = PythonOperator(
+        task_id='train_and_evaluate_fraud_model',
+        python_callable=train_and_evaluate_fraud_model,
+    )
