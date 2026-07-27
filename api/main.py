@@ -82,7 +82,7 @@ import time
 import os
 import joblib
 import numpy as np
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import pandas as pd
 
 # Global variables for model and database connection
@@ -142,6 +142,25 @@ def predict_fraud(request: FraudPredictionRequest):
     
     # Calculate Latency
     latency_ms = (time.time() - start_time) * 1000
+    
+    # Log prediction to database
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO fraud.predictions_log 
+                    (transaction_id, predicted_probability, predicted_class, latency_ms)
+                    VALUES (:tx_id, :prob, :pclass, :latency)
+                """),
+                {
+                    "tx_id": request.transaction_id,
+                    "prob": float(predicted_prob),
+                    "pclass": bool(predicted_class),
+                    "latency": float(latency_ms)
+                }
+            )
+    except Exception as e:
+        print(f"Error logging to database: {e}")
     
     return FraudPredictionResponse(
         transaction_id=request.transaction_id,
