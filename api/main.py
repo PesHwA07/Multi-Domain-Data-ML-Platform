@@ -1,3 +1,9 @@
+import time
+import pandas as pd
+from sqlalchemy import create_engine, text
+import numpy as np
+import joblib
+import os
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from typing import List
@@ -11,10 +17,14 @@ app = FastAPI(
 
 # --- Pydantic Models for Fraud Detection ---
 
+
 class FraudPredictionRequest(BaseModel):
-    transaction_id: str = Field(..., description="Unique identifier for the transaction")
+    transaction_id: str = Field(...,
+                                description="Unique identifier for the transaction")
     amount: float = Field(..., description="Transaction amount in USD")
-    features: List[float] = Field(..., min_items=28, max_items=28, description="Array of exactly 28 PCA features (V1-V28)")
+    features: List[float] = Field(..., min_items=28, max_items=28,
+                                  description="Array of exactly 28 PCA features (V1-V28)")
+
 
 class FraudPredictionResponse(BaseModel):
     transaction_id: str
@@ -25,6 +35,7 @@ class FraudPredictionResponse(BaseModel):
 
 # --- Pydantic Models for Energy Forecasting ---
 
+
 class EnergyForecastResponse(BaseModel):
     timestamp: datetime
     predicted_consumption: float
@@ -32,13 +43,11 @@ class EnergyForecastResponse(BaseModel):
     upper_band: float
     anomaly_flag: bool
 
+
 class EnergyForecastList(BaseModel):
     forecasts: List[EnergyForecastResponse]
     retrieved_at: datetime
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-from typing import List
-from datetime import datetime
+
 
 app = FastAPI(
     title="Multi-Domain Data & ML Platform API",
@@ -48,10 +57,14 @@ app = FastAPI(
 
 # --- Pydantic Models for Fraud Detection ---
 
+
 class FraudPredictionRequest(BaseModel):
-    transaction_id: str = Field(..., description="Unique identifier for the transaction")
+    transaction_id: str = Field(...,
+                                description="Unique identifier for the transaction")
     amount: float = Field(..., description="Transaction amount in USD")
-    features: List[float] = Field(..., min_items=28, max_items=28, description="Array of exactly 28 PCA features (V1-V28)")
+    features: List[float] = Field(..., min_items=28, max_items=28,
+                                  description="Array of exactly 28 PCA features (V1-V28)")
+
 
 class FraudPredictionResponse(BaseModel):
     transaction_id: str
@@ -62,6 +75,7 @@ class FraudPredictionResponse(BaseModel):
 
 # --- Pydantic Models for Energy Forecasting ---
 
+
 class EnergyForecastResponse(BaseModel):
     timestamp: datetime
     predicted_consumption: float
@@ -69,48 +83,49 @@ class EnergyForecastResponse(BaseModel):
     upper_band: float
     anomaly_flag: bool
 
+
 class EnergyForecastList(BaseModel):
     forecasts: List[EnergyForecastResponse]
     retrieved_at: datetime
+
 
 @app.get("/health", tags=["System"])
 def health_check():
     """Basic health check endpoint to verify API status."""
     return {"status": "ok", "message": "FastAPI is running"}
 
-import time
-import os
-import joblib
-import numpy as np
-from sqlalchemy import create_engine, text
-import pandas as pd
 
 # Global variables for model and database connection
 FRAUD_MODEL = None
 # The api service connects to the database via the docker network (postgres service)
-DB_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://airflow:airflow@postgres:5432/airflow")
+DB_URL = os.getenv(
+    "DATABASE_URL", "postgresql+psycopg2://airflow:airflow@postgres:5432/airflow")
 engine = create_engine(DB_URL)
+
 
 def load_fraud_model():
     global FRAUD_MODEL
     if FRAUD_MODEL is None:
-        # FastAPI mounts the repository's ./api directory at /app, but we also mount the 
+        # FastAPI mounts the repository's ./api directory at /app, but we also mount the
         # shared Airflow data volume at /opt/airflow/data where the model is saved.
         # Wait, looking at docker-compose, FastAPI only has volumes: - ./api:/app.
         # It doesn't have the data volume! We should fallback to the local path if needed,
-        # but for Docker to work properly, we need the shared volume. 
+        # but for Docker to work properly, we need the shared volume.
         # For now we'll construct the path relative to the code structure.
         model_path = "/app/../data/fraud_rf_model.joblib"
         if not os.path.exists(model_path):
-            model_path = os.path.join(os.path.dirname(__file__), '../data/fraud_rf_model.joblib')
+            model_path = os.path.join(os.path.dirname(
+                __file__), '../data/fraud_rf_model.joblib')
         if os.path.exists(model_path):
             FRAUD_MODEL = joblib.load(model_path)
         else:
             print(f"Warning: Fraud model artifact not found at {model_path}")
-            
+
+
 @app.on_event("startup")
 def startup_event():
     load_fraud_model()
+
 
 @app.post("/predict/fraud", response_model=FraudPredictionResponse, tags=["Fraud Detection"])
 def predict_fraud(request: FraudPredictionRequest):
@@ -120,7 +135,7 @@ def predict_fraud(request: FraudPredictionRequest):
     and returns a classification and probability score.
     """
     start_time = time.time()
-    
+
     if FRAUD_MODEL is None:
         # Attempt to lazily load if startup failed (e.g. model wasn't trained yet)
         load_fraud_model()
@@ -132,17 +147,18 @@ def predict_fraud(request: FraudPredictionRequest):
                 latency_ms=0.0,
                 model_version="error-model-not-found"
             )
-        
+
     # Construct feature matrix: Amount + V1-V28
-    input_features = np.array([request.amount] + request.features).reshape(1, -1)
-    
+    input_features = np.array(
+        [request.amount] + request.features).reshape(1, -1)
+
     # Predict
     predicted_class = FRAUD_MODEL.predict(input_features)[0]
     predicted_prob = FRAUD_MODEL.predict_proba(input_features)[0][1]
-    
+
     # Calculate Latency
     latency_ms = (time.time() - start_time) * 1000
-    
+
     # Log prediction to database
     try:
         with engine.begin() as conn:
@@ -161,7 +177,7 @@ def predict_fraud(request: FraudPredictionRequest):
             )
     except Exception as e:
         print(f"Error logging to database: {e}")
-    
+
     return FraudPredictionResponse(
         transaction_id=request.transaction_id,
         is_fraud=bool(predicted_class),
@@ -169,6 +185,7 @@ def predict_fraud(request: FraudPredictionRequest):
         latency_ms=latency_ms,
         model_version="RandomForest-SMOTE-v1.0"
     )
+
 
 @app.get("/forecast/energy", response_model=EnergyForecastList, tags=["Energy Forecasting"])
 def get_energy_forecast():
@@ -182,7 +199,7 @@ def get_energy_forecast():
         ORDER BY forecast_timestamp DESC 
         LIMIT 168
     """
-    
+
     try:
         df = pd.read_sql(query, engine)
         forecasts = []
@@ -194,7 +211,7 @@ def get_energy_forecast():
                 upper_band=row['upper_band'],
                 anomaly_flag=row['anomaly_flag']
             ))
-            
+
         return EnergyForecastList(
             forecasts=forecasts,
             retrieved_at=datetime.utcnow()

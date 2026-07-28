@@ -8,6 +8,7 @@ import hashlib
 # since this will run inside the Airflow container.
 DB_URL = "postgresql+psycopg2://airflow:airflow@postgres:5432/airflow"
 
+
 def extract_spotify_data():
     """
     Day 3: Extract
@@ -16,11 +17,11 @@ def extract_spotify_data():
     """
     file_path = "/opt/airflow/data/raw/spotify/dataset.csv"
     print(f"Reading dataset from {file_path}")
-    
+
     # Read the dataset
     df = pd.read_csv(file_path)
     print(f"Loaded {len(df)} rows from CSV.")
-    
+
     # Load into tracks_raw staging table
     engine = create_engine(DB_URL)
     with engine.begin() as conn:
@@ -42,28 +43,28 @@ def transform_and_load_spotify_data():
     and loads into `spotify.tracks_clean`.
     """
     engine = create_engine(DB_URL)
-    
+
     print("Reading from spotify.tracks_raw...")
     df = pd.read_sql("SELECT * FROM spotify.tracks_raw", engine)
-    
+
     print(f"Initial raw rows: {len(df)}")
-    
+
     # Transform: clean nulls
     df = df.dropna(subset=['track_id', 'track_name', 'artists'])
-    
+
     # Transform: deduplicate by track_id
     df = df.drop_duplicates(subset=['track_id'])
-    
+
     # Transform: derive 'decade' feature
-    # Since the Kaggle dataset doesn't include a release year, we simulate one 
+    # Since the Kaggle dataset doesn't include a release year, we simulate one
     # deterministically based on track_id hash for consistent dashboard queries.
     def get_decade(t_id):
         val = int(hashlib.md5(str(t_id).encode()).hexdigest()[:4], 16)
         decades = [1970, 1980, 1990, 2000, 2010, 2020]
         return decades[val % len(decades)]
-    
+
     df['decade'] = df['track_id'].apply(get_decade)
-    
+
     # Prepare the final dataframe matching tracks_clean schema
     clean_df = pd.DataFrame({
         'track_id': df['track_id'],
@@ -74,9 +75,9 @@ def transform_and_load_spotify_data():
         'popularity': df['popularity'],
         'decade': df['decade']
     })
-    
+
     print(f"Transformed data: {len(clean_df)} valid tracks.")
-    
+
     # Load into tracks_clean (truncate and append to preserve schema/PKs defined in init.sql)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE TABLE spotify.tracks_clean;"))
@@ -91,10 +92,10 @@ def transform_and_load_spotify_data():
 
 
 if __name__ == "__main__":
-    # Note: If running this directly on your host machine, you will need to change 
+    # Note: If running this directly on your host machine, you will need to change
     # file_path to './data/raw/spotify/dataset.csv' and DB_URL to localhost.
     # This is designed to be executed by Airflow in the Docker container.
-    
+
     # extract_spotify_data()
     # transform_and_load_spotify_data()
     pass
