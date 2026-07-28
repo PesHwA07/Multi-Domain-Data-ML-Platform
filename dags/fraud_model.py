@@ -143,7 +143,6 @@ def train_and_evaluate_fraud_model():
     base_clf = XGBClassifier(
         objective='binary:logistic',
         eval_metric='aucpr',
-        use_label_encoder=False,
         random_state=42,
         n_jobs=-1,
         tree_method='hist'  # Fast histogram-based method
@@ -158,9 +157,9 @@ def train_and_evaluate_fraud_model():
     }
 
     # PR-AUC scorer (average_precision_score)
+    # scikit-learn 1.7+: use response_method instead of deprecated needs_proba
     pr_auc_scorer = make_scorer(
         average_precision_score,
-        needs_proba=True,
         response_method='predict_proba'
     )
 
