@@ -86,5 +86,20 @@ services:
     volumes:
       - ./api:/app
 
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      - API_URL=http://fastapi:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    volumes:
+      - ./dashboard:/app
+
 volumes:
   postgres-db-volume:
