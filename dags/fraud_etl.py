@@ -71,7 +71,29 @@ def ingest_fraud_data():
     print("Fraud data ingestion successfully completed!")
 
 
-if __name__ == "__main__":
-    # Test execution block
-    # ingest_fraud_data()
-    pass
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=10),
+}
+
+with DAG(
+    'fraud_etl_pipeline',
+    default_args=default_args,
+    description='A daily DAG to ingest raw credit card fraud data into PostgreSQL',
+    schedule_interval='@daily',
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    tags=['fraud', 'etl'],
+) as dag:
+
+    ingest_task = PythonOperator(
+        task_id='ingest_fraud_data',
+        python_callable=ingest_fraud_data,
+    )
