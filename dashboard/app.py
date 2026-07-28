@@ -95,8 +95,65 @@ elif selection == "Airflow Status":
 
 elif selection == "Energy Forecasting":
     st.title("⚡ Energy Forecasting")
-    st.info("This module will be fully implemented in Day 24.")
+    st.markdown("Visualizing Prophet's energy consumption forecasts and anomaly bounds.")
+    
+    try:
+        query = """
+            SELECT forecast_timestamp, predicted_consumption, lower_band, upper_band, anomaly_flag 
+            FROM energy.forecasts 
+            ORDER BY forecast_timestamp DESC 
+            LIMIT 168
+        """
+        df = pd.read_sql(query, engine)
+        if not df.empty:
+            # Sort chronologically for the chart
+            df = df.sort_values(by='forecast_timestamp')
+            
+            st.subheader("1-Week Consumption Forecast")
+            # Set index for streamlit line_chart
+            chart_df = df.set_index("forecast_timestamp")[["predicted_consumption", "lower_band", "upper_band"]]
+            st.line_chart(chart_df)
+            
+            # Show Anomalies
+            anomalies = df[df["anomaly_flag"] == True]
+            st.subheader(f"Detected Anomalies: {len(anomalies)}")
+            if not anomalies.empty:
+                st.dataframe(anomalies, use_container_width=True)
+        else:
+            st.info("No forecasts found in the database. Run the Energy Airflow DAG first.")
+    except Exception as e:
+        st.error(f"Error loading Energy data: {e}")
 
 elif selection == "Fraud Detection":
     st.title("💳 Fraud Detection")
-    st.info("This module will be fully implemented in Day 24.")
+    st.markdown("Live telemetry and metrics from the real-time Fraud Detection FastAPI endpoint.")
+    
+    try:
+        query = """
+            SELECT timestamp, predicted_probability, predicted_class, latency_ms
+            FROM fraud.predictions_log
+            ORDER BY timestamp DESC
+            LIMIT 1000
+        """
+        df = pd.read_sql(query, engine)
+        if not df.empty:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total API Requests Logged", len(df))
+            with col2:
+                fraud_count = df['predicted_class'].sum()
+                st.metric("Flagged Fraud Transactions", int(fraud_count))
+            with col3:
+                avg_latency = df['latency_ms'].mean()
+                st.metric("Average API Latency", f"{avg_latency:.2f} ms")
+                
+            st.subheader("Recent API Latency (ms)")
+            chart_data = df.sort_values(by="timestamp").set_index("timestamp")[["latency_ms"]]
+            st.line_chart(chart_data)
+            
+            st.subheader("Recent API Telemetry")
+            st.dataframe(df.head(20), use_container_width=True)
+        else:
+            st.info("No predictions logged yet. Send a POST request to FastAPI /predict/fraud first.")
+    except Exception as e:
+        st.error(f"Error loading Fraud telemetry data: {e}")
