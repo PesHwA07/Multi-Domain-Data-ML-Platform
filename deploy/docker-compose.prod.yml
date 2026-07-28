@@ -1,0 +1,68 @@
+version: '3.8'
+
+x-airflow-common:
+  &airflow-common
+  image: ${ECR_REGISTRY}/multi-domain-airflow:latest
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AWS_RDS_DATABASE_URL}
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    _PIP_ADDITIONAL_REQUIREMENTS: 'pandas statsmodels scikit-learn prophet imbalanced-learn'
+  volumes:
+    - airflow-data:/opt/airflow/data
+
+services:
+  airflow-init:
+    <<: *airflow-common
+    command: version
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_UPGRADE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-admin}
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  fastapi:
+    image: ${ECR_REGISTRY}/multi-domain-api:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${AWS_RDS_DATABASE_URL}
+    volumes:
+      - airflow-data:/app/data  # Share models trained by Airflow
+
+  dashboard:
+    image: ${ECR_REGISTRY}/multi-domain-dashboard:latest
+    ports:
+      - "8501:8501"
+    environment:
+      - DATABASE_URL=${AWS_RDS_DATABASE_URL}
+      - API_URL=http://fastapi:8000
+
+volumes:
+  airflow-data:
