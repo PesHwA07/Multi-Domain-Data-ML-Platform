@@ -1,9 +1,10 @@
 """
-Energy Modeling and Forecasting DAG
-===================================
-This module handles the extraction, preprocessing, baseline modeling (ARIMA), 
-advanced modeling (Prophet), and anomaly detection for PJM energy data. 
-It is orchestrated as a weekly Airflow DAG.
+Energy Modeling and Forecasting DAG (Prophet v2.0 + Holidays + Regressors)
+==========================================================================
+This module handles the extraction, preprocessing, baseline modeling (ARIMA),
+advanced modeling (Prophet with US holidays and temporal regressors), and
+anomaly detection for PJM energy data. It is orchestrated as a weekly
+Airflow DAG.
 """
 
 from airflow import DAG
@@ -23,8 +24,8 @@ DB_URL = "postgresql+psycopg2://airflow:airflow@postgres:5432/airflow"
 
 def preprocess_energy_data():
     """
-    Day 9: Time-Series Preprocessing
-    Fetches raw readings, handles missing values, resamples to ensure 
+    Time-Series Preprocessing
+    Fetches raw readings, handles missing values, resamples to ensure
     continuous hourly frequency, and performs a sequential train/test split.
     """
     engine = create_engine(DB_URL)
@@ -38,7 +39,6 @@ def preprocess_energy_data():
     df.set_index('timestamp', inplace=True)
 
     # 1. Resample to strict hourly frequency to explicitly expose missing hours
-    # 'h' enforces hourly frequency, .mean() handles any potential duplicates within an hour
     print("Resampling to strict hourly frequency...")
     df = df.resample('h').mean()
 
@@ -52,28 +52,43 @@ def preprocess_energy_data():
     print(f"Missing hours after interpolation: {missing_after}")
 
     # 3. Sequential Train/Test Split (80/20)
-    # CRITICAL: Strict chronological split, NO random shuffling to prevent data leakage
+    # CRITICAL: Strict chronological split, NO random shuffling
     split_idx = int(len(df) * 0.8)
 
     train_df = df.iloc[:split_idx]
     test_df = df.iloc[split_idx:]
 
     print(
-        f"Sequential Split -> Train size: {len(train_df)} rows, Test size: {len(test_df)} rows")
+        f"Sequential Split -> Train size: {len(train_df)} rows, "
+        f"Test size: {len(test_df)} rows")
 
-    # Returning the dataframes to be passed to the modeling functions (Prophet/ARIMA)
     return train_df, test_df
+
+
+def add_temporal_regressors(df):
+    """
+    Feature Engineering: Adds temporal regressors for Prophet.
+    - hour_of_day: Hour (0-23), captures intra-day demand patterns
+    - day_of_week: Day (0=Mon, 6=Sun), captures weekday/weekend patterns
+
+    Parameters:
+        df: DataFrame with a 'ds' column (datetime)
+    Returns:
+        df with two additional regressor columns
+    """
+    df['hour_of_day'] = df['ds'].dt.hour
+    df['day_of_week'] = df['ds'].dt.dayofweek
+    return df
 
 
 def train_arima_baseline():
     """
-    Day 10: Baseline Modeling
+    Baseline Modeling
     Trains an ARIMA baseline model on the training set and evaluates it.
     """
     train_df, test_df = preprocess_energy_data()
 
     print("Training ARIMA baseline model (order=1,1,1)...")
-    # We use a simple order for the baseline.
     model = ARIMA(train_df['consumption'].values, order=(1, 1, 1))
     fitted_model = model.fit()
 
@@ -95,29 +110,42 @@ def train_arima_baseline():
 
 def train_prophet_model():
     """
-    Day 11: Prophet Modeling
-    Trains a Facebook Prophet model, evaluates it against the test set,
-    and calculates final RMSE/MAE metrics.
+    Prophet v2.0 Modeling with US Holidays and Temporal Regressors
+    Trains a Facebook Prophet model with country-level holiday effects and
+    hour/day regressors, evaluates against the test set, and returns the
+    forecast with confidence intervals.
     """
     train_df, test_df = preprocess_energy_data()
 
-    # Prophet strictly requires columns named 'ds' (datestamp) and 'y' (target)
-    # Our data currently has 'timestamp' as the index and 'consumption' as the column
+    # Prophet requires columns named 'ds' (datestamp) and 'y' (target)
     prophet_train = train_df.reset_index().rename(
         columns={'timestamp': 'ds', 'consumption': 'y'})
     prophet_test = test_df.reset_index().rename(
         columns={'timestamp': 'ds', 'consumption': 'y'})
 
-    print("Training Prophet model...")
+    # Add temporal regressors to both train and test sets
+    print("Engineering temporal regressors (hour_of_day, day_of_week)...")
+    prophet_train = add_temporal_regressors(prophet_train)
+    prophet_test = add_temporal_regressors(prophet_test)
+
+    print("Training Prophet v2.0 model with US holidays and regressors...")
     model = Prophet(
         yearly_seasonality=True,
         weekly_seasonality=True,
         daily_seasonality=True
     )
+
+    # Add US holiday effects (Thanksgiving, Christmas, July 4th, etc.)
+    model.add_country_holidays(country_name='US')
+
+    # Add temporal regressors for stronger intra-day/weekly signals
+    model.add_regressor('hour_of_day')
+    model.add_regressor('day_of_week')
+
     model.fit(prophet_train)
 
     print("Generating forecasts for the test set...")
-    forecast = model.predict(prophet_test[['ds']])
+    forecast = model.predict(prophet_test[['ds', 'hour_of_day', 'day_of_week']])
 
     # Calculate Evaluation Metrics
     rmse = np.sqrt(mean_squared_error(
@@ -125,19 +153,20 @@ def train_prophet_model():
     mae = mean_absolute_error(
         prophet_test['y'].values, forecast['yhat'].values)
 
-    print(f"--- Prophet Metrics ---")
+    print(f"--- Prophet v2.0 Metrics ---")
     print(f"RMSE: {rmse:.2f}")
     print(f"MAE:  {mae:.2f}")
-    print(f"-----------------------")
+    print(f"----------------------------")
 
     return model, forecast, prophet_test
 
 
 def evaluate_and_store(forecast, actual_df):
     """
-    Day 12: Evaluation & Storage
-    Flags anomalies where actual consumption falls outside Prophet's confidence bands,
-    and stores the final forecast data into the energy.forecasts PostgreSQL table.
+    Evaluation & Storage
+    Flags anomalies where actual consumption falls outside Prophet's
+    confidence bands, and stores the final forecast data into the
+    energy.forecasts PostgreSQL table.
     """
     # Merge the forecast with the actual test data on the timestamp ('ds')
     merged = pd.merge(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']],
@@ -150,7 +179,8 @@ def evaluate_and_store(forecast, actual_df):
         merged['y'] < merged['yhat_lower'])
 
     print(
-        f"Detected {merged['anomaly_flag'].sum()} anomalies out of {len(merged)} test hours.")
+        f"Detected {merged['anomaly_flag'].sum()} anomalies "
+        f"out of {len(merged)} test hours.")
 
     # Prepare the DataFrame for SQL insertion according to the schema
     db_df = pd.DataFrame({
@@ -158,7 +188,7 @@ def evaluate_and_store(forecast, actual_df):
         'predicted_consumption': merged['yhat'],
         'lower_band': merged['yhat_lower'],
         'upper_band': merged['yhat_upper'],
-        'model_version': 'Prophet-v1.0',
+        'model_version': 'Prophet-v2.0-holidays',
         'anomaly_flag': merged['anomaly_flag']
     })
 
@@ -178,7 +208,8 @@ def evaluate_and_store(forecast, actual_df):
 
 def run_energy_forecasting_pipeline():
     """Executes the complete energy forecasting and evaluation pipeline."""
-    # We optionally train the baseline just to log metrics, but rely on Prophet for the actual forecast
+    # Train the baseline to log comparison metrics,
+    # then rely on Prophet v2.0 for the actual forecast
     train_arima_baseline()
     model, forecast, test_df = train_prophet_model()
     evaluate_and_store(forecast, test_df)
@@ -197,11 +228,11 @@ default_args = {
 with DAG(
     'energy_forecasting_weekly',
     default_args=default_args,
-    description='A weekly DAG to retrain the Prophet energy model and store anomaly-flagged forecasts',
+    description='Weekly DAG: Prophet v2.0 energy model with US holidays and temporal regressors',
     schedule_interval='@weekly',
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=['energy', 'ml', 'prophet'],
+    tags=['energy', 'ml', 'prophet', 'holidays'],
 ) as dag:
 
     forecast_task = PythonOperator(

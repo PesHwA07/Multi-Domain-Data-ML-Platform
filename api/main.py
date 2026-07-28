@@ -12,47 +12,7 @@ from datetime import datetime
 app = FastAPI(
     title="Multi-Domain Data & ML Platform API",
     description="Unified API for Fraud Detection and Energy Forecasting",
-    version="1.0.0"
-)
-
-# --- Pydantic Models for Fraud Detection ---
-
-
-class FraudPredictionRequest(BaseModel):
-    transaction_id: str = Field(...,
-                                description="Unique identifier for the transaction")
-    amount: float = Field(..., description="Transaction amount in USD")
-    features: List[float] = Field(..., min_items=28, max_items=28,
-                                  description="Array of exactly 28 PCA features (V1-V28)")
-
-
-class FraudPredictionResponse(BaseModel):
-    transaction_id: str
-    is_fraud: bool
-    fraud_probability: float
-    latency_ms: float
-    model_version: str
-
-# --- Pydantic Models for Energy Forecasting ---
-
-
-class EnergyForecastResponse(BaseModel):
-    timestamp: datetime
-    predicted_consumption: float
-    lower_band: float
-    upper_band: float
-    anomaly_flag: bool
-
-
-class EnergyForecastList(BaseModel):
-    forecasts: List[EnergyForecastResponse]
-    retrieved_at: datetime
-
-
-app = FastAPI(
-    title="Multi-Domain Data & ML Platform API",
-    description="Unified API for Fraud Detection and Energy Forecasting",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # --- Pydantic Models for Fraud Detection ---
@@ -97,27 +57,39 @@ def health_check():
 
 # Global variables for model and database connection
 FRAUD_MODEL = None
-# The api service connects to the database via the docker network (postgres service)
+# The api service connects to the database via the docker network
 DB_URL = os.getenv(
     "DATABASE_URL", "postgresql+psycopg2://airflow:airflow@postgres:5432/airflow")
 engine = create_engine(DB_URL)
 
 
+def engineer_features_for_inference(amount, features):
+    """
+    Applies the same feature engineering used during training so that
+    the inference input shape matches what the model expects.
+    The model was trained with: [amount, V1-V28, amount_log, amount_zscore]
+    Total features = 31
+    """
+    amount_log = np.log1p(amount)
+    # For single-transaction inference, z-score is relative to itself (0.0)
+    # This is acceptable because the model learned the distribution from
+    # training data; the z-score feature still provides signal at extremes.
+    amount_zscore = 0.0
+    return np.array([amount] + features + [amount_log, amount_zscore]).reshape(1, -1)
+
+
 def load_fraud_model():
     global FRAUD_MODEL
     if FRAUD_MODEL is None:
-        # FastAPI mounts the repository's ./api directory at /app, but we also mount the
-        # shared Airflow data volume at /opt/airflow/data where the model is saved.
-        # Wait, looking at docker-compose, FastAPI only has volumes: - ./api:/app.
-        # It doesn't have the data volume! We should fallback to the local path if needed,
-        # but for Docker to work properly, we need the shared volume.
-        # For now we'll construct the path relative to the code structure.
-        model_path = "/app/../data/fraud_rf_model.joblib"
+        # Primary path: shared data volume mounted at /data
+        model_path = "/data/fraud_xgb_model.joblib"
         if not os.path.exists(model_path):
+            # Fallback: relative path for local development
             model_path = os.path.join(os.path.dirname(
-                __file__), '../data/fraud_rf_model.joblib')
+                __file__), '../data/fraud_xgb_model.joblib')
         if os.path.exists(model_path):
             FRAUD_MODEL = joblib.load(model_path)
+            print(f"Loaded XGBoost model from {model_path}")
         else:
             print(f"Warning: Fraud model artifact not found at {model_path}")
 
@@ -131,13 +103,13 @@ def startup_event():
 def predict_fraud(request: FraudPredictionRequest):
     """
     Real-time Fraud Prediction Endpoint
-    Takes a transaction with PCA features, runs it through the SMOTE-trained Random Forest model,
-    and returns a classification and probability score.
+    Takes a transaction with PCA features, runs it through the XGBoost model
+    trained with GridSearchCV, and returns a classification and probability.
     """
     start_time = time.time()
 
     if FRAUD_MODEL is None:
-        # Attempt to lazily load if startup failed (e.g. model wasn't trained yet)
+        # Attempt to lazily load if startup failed
         load_fraud_model()
         if FRAUD_MODEL is None:
             return FraudPredictionResponse(
@@ -148,9 +120,9 @@ def predict_fraud(request: FraudPredictionRequest):
                 model_version="error-model-not-found"
             )
 
-    # Construct feature matrix: Amount + V1-V28
-    input_features = np.array(
-        [request.amount] + request.features).reshape(1, -1)
+    # Construct feature matrix with engineered features
+    input_features = engineer_features_for_inference(
+        request.amount, request.features)
 
     # Predict
     predicted_class = FRAUD_MODEL.predict(input_features)[0]
@@ -183,14 +155,15 @@ def predict_fraud(request: FraudPredictionRequest):
         is_fraud=bool(predicted_class),
         fraud_probability=float(predicted_prob),
         latency_ms=latency_ms,
-        model_version="RandomForest-SMOTE-v1.0"
+        model_version="XGBoost-GridCV-v2.0"
     )
 
 
 @app.get("/forecast/energy", response_model=EnergyForecastList, tags=["Energy Forecasting"])
 def get_energy_forecast():
     """
-    Retrieves the latest anomaly-flagged energy forecasts from the PostgreSQL database.
+    Retrieves the latest anomaly-flagged energy forecasts from the
+    PostgreSQL database.
     """
     # Fetch the last 168 hours (1 week) of forecasts
     query = """
