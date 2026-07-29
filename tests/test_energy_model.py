@@ -1,15 +1,13 @@
-from energy_model import preprocess_energy_data
-import unittest
-from unittest.mock import patch
-import pandas as pd
-
 import sys
 import os
 # Adjust path to import the DAG module properly
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../dags')))
 
-
+from energy_model import preprocess_energy_data
+import unittest
+from unittest.mock import patch
+import pandas as pd
 class TestEnergyModel(unittest.TestCase):
 
     @patch('energy_model.pd.read_sql')
