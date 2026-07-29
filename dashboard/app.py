@@ -390,12 +390,14 @@ elif selection == "Fraud Detection":
                             },
                             hole=0.55
                         )
+                        fraud_total = int(
+                            dist_df[dist_df['is_fraud'] == True][
+                                'count'].sum())
                         fig_pie.update_layout(
                             **PLOTLY_LAYOUT, height=380,
                             legend=dict(orientation='h', y=-0.1),
                             annotations=[dict(
-                                text=(f"{dist_df[dist_df['is_fraud'] == True]"
-                                      f"['count'].sum():,}<br>Fraud"),
+                                text=f"{fraud_total:,}<br>Fraud",
                                 x=0.5, y=0.5, font_size=16,
                                 font_color=COLORS['danger'],
                                 showarrow=False
