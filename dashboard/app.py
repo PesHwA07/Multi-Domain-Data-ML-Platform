@@ -320,7 +320,6 @@ elif selection == "Spotify Analytics":
                     )
                     fig_bar.update_layout(
                         **PLOTLY_LAYOUT, height=500,
-                        yaxis=dict(gridcolor=COLORS['grid']),
                         coloraxis_colorbar=dict(title="Pop."),
                     )
                     st.plotly_chart(fig_bar, use_container_width=True)
@@ -855,13 +854,13 @@ elif selection == "Airflow Status":
             f"hasn't fully initialized): {e}")
 
 # =====================================================
-# ENERGY FORECASTING
+# ENERGY FORECASTING — FULLY REDESIGNED
 # =====================================================
 elif selection == "Energy Forecasting":
-    st.title("⚡ Energy Forecasting")
+    st.title("⚡ Energy Forecasting Analytics")
     st.markdown(
         "Prophet v2.0 energy consumption forecasts with "
-        "US holiday effects and anomaly detection.")
+        "US holiday effects, temporal patterns, and anomaly detection.")
 
     try:
         query = """
@@ -869,18 +868,19 @@ elif selection == "Energy Forecasting":
                    lower_band, upper_band, anomaly_flag 
             FROM energy.forecasts 
             ORDER BY forecast_timestamp 
-            LIMIT 500
         """
         df = pd.read_sql(query, engine)
         if not df.empty:
             df = df.sort_values(by='forecast_timestamp')
+            df['forecast_timestamp'] = pd.to_datetime(df['forecast_timestamp'])
 
             # --- KPI Row ---
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3, col4, col5 = st.columns(5)
             anomaly_count = df['anomaly_flag'].sum()
             avg_consumption = df['predicted_consumption'].mean()
             peak = df['predicted_consumption'].max()
             band_width = (df['upper_band'] - df['lower_band']).mean()
+            min_consumption = df['predicted_consumption'].min()
 
             with col1:
                 st.metric("Forecast Points", f"{len(df):,}")
@@ -889,68 +889,146 @@ elif selection == "Energy Forecasting":
             with col3:
                 st.metric("Peak Demand", f"{peak:,.0f} MW")
             with col4:
+                st.metric("Min Demand", f"{min_consumption:,.0f} MW")
+            with col5:
                 st.metric("Anomalies Detected", int(anomaly_count))
 
             st.markdown("---")
 
-            # --- Forecast Chart with Confidence Bands ---
-            st.subheader("📈 Consumption Forecast with Confidence Bands")
+            tab1, tab2, tab3 = st.tabs([
+                "📈 Forecast Overview",
+                "🕒 Temporal Patterns",
+                "🚨 Confidence & Anomalies"
+            ])
 
-            fig = go.Figure()
+            # ============================
+            # TAB 1: FORECAST OVERVIEW
+            # ============================
+            with tab1:
+                st.subheader("Consumption Forecast with Confidence Bands")
 
-            # Confidence band (shaded area)
-            fig.add_trace(go.Scatter(
-                x=df['forecast_timestamp'], y=df['upper_band'],
-                mode='lines', line=dict(width=0),
-                showlegend=False, name='Upper Band'
-            ))
-            fig.add_trace(go.Scatter(
-                x=df['forecast_timestamp'], y=df['lower_band'],
-                mode='lines', line=dict(width=0),
-                fill='tonexty',
-                fillcolor='rgba(108,99,255,0.15)',
-                name='Confidence Band'
-            ))
+                fig = go.Figure()
 
-            # Predicted line
-            fig.add_trace(go.Scatter(
-                x=df['forecast_timestamp'],
-                y=df['predicted_consumption'],
-                mode='lines',
-                line=dict(color=COLORS['primary'], width=2),
-                name='Predicted'
-            ))
-
-            # Anomaly markers
-            anomalies = df[df['anomaly_flag'] == True]
-            if not anomalies.empty:
+                # Confidence band (shaded area)
                 fig.add_trace(go.Scatter(
-                    x=anomalies['forecast_timestamp'],
-                    y=anomalies['predicted_consumption'],
-                    mode='markers',
-                    marker=dict(color=COLORS['danger'], size=8,
-                                symbol='x', line=dict(width=1)),
-                    name='Anomaly'
+                    x=df['forecast_timestamp'], y=df['upper_band'],
+                    mode='lines', line=dict(width=0),
+                    showlegend=False, name='Upper Band'
+                ))
+                fig.add_trace(go.Scatter(
+                    x=df['forecast_timestamp'], y=df['lower_band'],
+                    mode='lines', line=dict(width=0),
+                    fill='tonexty',
+                    fillcolor='rgba(108,99,255,0.15)',
+                    name='Confidence Band'
                 ))
 
-            fig.update_layout(
-                **PLOTLY_LAYOUT,
-                height=450,
-                legend=dict(orientation='h', y=-0.15),
-                xaxis_title='Timestamp',
-                yaxis_title='Consumption (MW)',
-            )
-            st.plotly_chart(fig, use_container_width=True)
+                # Predicted line
+                fig.add_trace(go.Scatter(
+                    x=df['forecast_timestamp'],
+                    y=df['predicted_consumption'],
+                    mode='lines',
+                    line=dict(color=COLORS['primary'], width=2),
+                    name='Predicted'
+                ))
 
-            # --- Anomaly Table ---
-            if not anomalies.empty:
-                st.subheader(
-                    f"🔴 Anomalous Hours ({len(anomalies)} detected)")
-                st.dataframe(
-                    anomalies[['forecast_timestamp',
-                               'predicted_consumption',
-                               'lower_band', 'upper_band']],
-                    use_container_width=True)
+                # Anomaly markers
+                anomalies = df[df['anomaly_flag'] == True]
+                if not anomalies.empty:
+                    fig.add_trace(go.Scatter(
+                        x=anomalies['forecast_timestamp'],
+                        y=anomalies['predicted_consumption'],
+                        mode='markers',
+                        marker=dict(color=COLORS['danger'], size=8,
+                                    symbol='x', line=dict(width=1)),
+                        name='Anomaly'
+                    ))
+
+                fig.update_layout(
+                    **PLOTLY_LAYOUT,
+                    height=450,
+                    legend=dict(orientation='h', y=-0.15),
+                    xaxis_title='Timestamp',
+                    yaxis_title='Consumption (MW)',
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            # ============================
+            # TAB 2: TEMPORAL PATTERNS
+            # ============================
+            with tab2:
+                df['hour'] = df['forecast_timestamp'].dt.hour
+                df['day_name'] = df['forecast_timestamp'].dt.day_name()
+                cats = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                df['day_name'] = pd.Categorical(df['day_name'], categories=cats, ordered=True)
+
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    st.markdown("#### Hourly Average Profile")
+                    hourly_avg = df.groupby('hour')['predicted_consumption'].mean().reset_index()
+                    fig_hour = px.line(
+                        hourly_avg, x='hour', y='predicted_consumption',
+                        markers=True, line_shape='spline',
+                        labels={'hour': 'Hour of Day', 'predicted_consumption': 'Avg Consumption (MW)'}
+                    )
+                    fig_hour.update_traces(line=dict(color=COLORS['secondary'], width=3), marker=dict(size=8))
+                    fig_hour.update_layout(**PLOTLY_LAYOUT, height=400)
+                    st.plotly_chart(fig_hour, use_container_width=True)
+
+                with col_right:
+                    st.markdown("#### Day of Week Profile")
+                    daily_avg = df.groupby('day_name', observed=False)['predicted_consumption'].mean().reset_index()
+                    fig_day = px.bar(
+                        daily_avg, x='day_name', y='predicted_consumption',
+                        color='predicted_consumption', color_continuous_scale='Mint',
+                        labels={'day_name': 'Day', 'predicted_consumption': 'Avg Consumption (MW)'}
+                    )
+                    fig_day.update_layout(**PLOTLY_LAYOUT, height=400, coloraxis_showscale=False)
+                    st.plotly_chart(fig_day, use_container_width=True)
+                
+                st.markdown("#### Hourly vs Day Heatmap")
+                heat_df = df.groupby(['day_name', 'hour'], observed=False)['predicted_consumption'].mean().unstack()
+                fig_heat = px.imshow(
+                    heat_df, color_continuous_scale='Viridis', aspect='auto',
+                    labels=dict(x="Hour of Day", y="Day of Week", color="Consumption")
+                )
+                fig_heat.update_layout(**PLOTLY_LAYOUT, height=350)
+                st.plotly_chart(fig_heat, use_container_width=True)
+
+            # ============================
+            # TAB 3: CONFIDENCE & ANOMALIES
+            # ============================
+            with tab3:
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    st.markdown("#### Consumption Distribution")
+                    fig_dist = px.histogram(
+                        df, x='predicted_consumption', nbins=40,
+                        color='anomaly_flag', color_discrete_map={False: COLORS['success'], True: COLORS['danger']},
+                        labels={'predicted_consumption': 'Consumption (MW)', 'anomaly_flag': 'Is Anomaly'}
+                    )
+                    fig_dist.update_layout(**PLOTLY_LAYOUT, height=400, barmode='overlay')
+                    st.plotly_chart(fig_dist, use_container_width=True)
+
+                with col_right:
+                    st.markdown("#### Confidence Band Width Over Time")
+                    df['band_width'] = df['upper_band'] - df['lower_band']
+                    fig_width = px.line(
+                        df, x='forecast_timestamp', y='band_width',
+                        labels={'forecast_timestamp': 'Timestamp', 'band_width': 'Uncertainty Width (MW)'}
+                    )
+                    fig_width.update_traces(line=dict(color=COLORS['info'], width=2))
+                    fig_width.update_layout(**PLOTLY_LAYOUT, height=400)
+                    st.plotly_chart(fig_width, use_container_width=True)
+
+                # Anomaly Table
+                if not anomalies.empty:
+                    st.subheader(f"🔴 Anomalous Hours ({len(anomalies)} detected)")
+                    st.dataframe(
+                        anomalies[['forecast_timestamp', 'predicted_consumption', 'lower_band', 'upper_band']],
+                        use_container_width=True)
 
         else:
             st.info(
