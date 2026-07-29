@@ -98,78 +98,761 @@ PLOTLY_LAYOUT = dict(
 if selection == "Home":
     st.title("🚀 Multi-Domain Data & ML Platform")
     st.markdown(
-        "Welcome to the unified dashboard for **Spotify Analytics**, "
-        "**Energy Forecasting**, and **Fraud Detection**.")
+        "A unified infrastructure powering **3 domains**, "
+        "**5 microservices**, and **400K+ records** with "
+        "sub-100ms inference latency.")
+
+    st.markdown("---")
 
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        st.success("✅ Successfully connected to the PostgreSQL database!")
+
+        # Fetch live counts from all 3 domains
+        spotify_count = 0
+        energy_count = 0
+        fraud_count = 0
+        prediction_count = 0
+        try:
+            with engine.connect() as conn:
+                r = conn.execute(text(
+                    "SELECT COUNT(*) FROM spotify.tracks_clean"))
+                spotify_count = r.scalar() or 0
+                r = conn.execute(text(
+                    "SELECT COUNT(*) FROM energy.hourly_readings"))
+                energy_count = r.scalar() or 0
+                r = conn.execute(text(
+                    "SELECT COUNT(*) FROM fraud.transactions"))
+                fraud_count = r.scalar() or 0
+                r = conn.execute(text(
+                    "SELECT COUNT(*) FROM fraud.predictions_log"))
+                prediction_count = r.scalar() or 0
+        except Exception:
+            pass
+
+        total_records = spotify_count + energy_count + fraud_count
+
+        # KPI Row
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Total Records", f"{total_records:,}")
+        with col2:
+            st.metric("Spotify Tracks", f"{spotify_count:,}")
+        with col3:
+            st.metric("Energy Readings", f"{energy_count:,}")
+        with col4:
+            st.metric("Fraud Transactions", f"{fraud_count:,}")
+        with col5:
+            st.metric("API Predictions", f"{prediction_count:,}")
+
+        st.markdown("---")
+
+        # Domain cards
+        col_a, col_b, col_c = st.columns(3)
+
+        with col_a:
+            st.markdown("### 🎵 Spotify Analytics")
+            st.markdown(
+                "Batch ETL pipeline processing artist metadata, "
+                "audio features, and popularity scores.")
+            fig = go.Figure(go.Indicator(
+                mode="number", value=spotify_count,
+                title=dict(text="Tracks Loaded",
+                           font=dict(size=14)),
+                number=dict(font=dict(size=36,
+                                      color=COLORS['primary'])),
+            ))
+            fig.update_layout(
+                height=150,
+                paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col_b:
+            st.markdown("### ⚡ Energy Forecasting")
+            st.markdown(
+                "Prophet v2.0 time-series forecasting with "
+                "US holidays and anomaly detection.")
+            fig = go.Figure(go.Indicator(
+                mode="number", value=energy_count,
+                title=dict(text="Hourly Readings",
+                           font=dict(size=14)),
+                number=dict(font=dict(size=36,
+                                      color=COLORS['success'])),
+            ))
+            fig.update_layout(
+                height=150,
+                paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col_c:
+            st.markdown("### 💳 Fraud Detection")
+            st.markdown(
+                "XGBoost real-time classifier with GridSearchCV "
+                "and sub-100ms FastAPI serving.")
+            fig = go.Figure(go.Indicator(
+                mode="number", value=fraud_count,
+                title=dict(text="Transactions Analyzed",
+                           font=dict(size=14)),
+                number=dict(font=dict(size=36,
+                                      color=COLORS['danger'])),
+            ))
+            fig.update_layout(
+                height=150,
+                paper_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+
+        st.success("✅ All systems connected and operational.")
+
     except Exception as e:
         st.error(f"❌ Failed to connect to database: {e}")
 
-    st.info("👈 Use the sidebar to navigate between domains.")
-
 # =====================================================
-# SPOTIFY ANALYTICS
+# SPOTIFY ANALYTICS — FULLY REDESIGNED
 # =====================================================
 elif selection == "Spotify Analytics":
     st.title("🎵 Spotify Analytics")
-    st.markdown("Visualizing curated data from the batch ETL pipeline.")
+    st.markdown(
+        "Deep-dive into audio features, artist popularity, "
+        "and decade trends from the batch ETL pipeline.")
 
     try:
-        query = """
-            SELECT artist, COUNT(*) as track_count, AVG(popularity) as avg_popularity, 
-                   AVG(danceability) as avg_danceability
+        # Fetch comprehensive data
+        overview_query = """
+            SELECT COUNT(*) as total_tracks,
+                   COUNT(DISTINCT artist) as unique_artists,
+                   AVG(popularity) as avg_popularity,
+                   AVG(danceability) as avg_danceability,
+                   AVG(energy) as avg_energy
+            FROM spotify.tracks_clean
+        """
+        overview = pd.read_sql(overview_query, engine)
+
+        top_artists_query = """
+            SELECT artist, COUNT(*) as track_count,
+                   AVG(popularity) as avg_popularity,
+                   AVG(danceability) as avg_danceability,
+                   AVG(energy) as avg_energy
             FROM spotify.tracks_clean
             GROUP BY artist
             ORDER BY track_count DESC
-            LIMIT 20
+            LIMIT 15
         """
-        df = pd.read_sql(query, engine)
-        if not df.empty:
-            st.subheader("Top 20 Artists by Track Count")
-            st.dataframe(df, use_container_width=True)
+        top_artists = pd.read_sql(top_artists_query, engine)
 
-            st.subheader("Popularity vs Danceability")
-            st.scatter_chart(df, x="avg_popularity", y="avg_danceability")
+        decade_query = """
+            SELECT decade, COUNT(*) as track_count,
+                   AVG(popularity) as avg_popularity,
+                   AVG(danceability) as avg_danceability,
+                   AVG(energy) as avg_energy
+            FROM spotify.tracks_clean
+            WHERE decade IS NOT NULL
+            GROUP BY decade
+            ORDER BY decade
+        """
+        decade_df = pd.read_sql(decade_query, engine)
+
+        scatter_query = """
+            SELECT name, artist, popularity, danceability, energy
+            FROM spotify.tracks_clean
+            ORDER BY popularity DESC
+            LIMIT 500
+        """
+        scatter_df = pd.read_sql(scatter_query, engine)
+
+        all_tracks_query = """
+            SELECT danceability, energy, popularity
+            FROM spotify.tracks_clean
+            ORDER BY RANDOM()
+            LIMIT 5000
+        """
+        all_tracks = pd.read_sql(all_tracks_query, engine)
+
+        if overview.iloc[0]['total_tracks'] == 0:
+            st.warning("No data found. Run the Spotify DAG first.")
         else:
-            st.warning(
-                "No data found in spotify.tracks_clean. "
-                "Please run the Spotify Airflow DAG first.")
+            # --- KPI Row ---
+            row = overview.iloc[0]
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.metric("Total Tracks",
+                          f"{int(row['total_tracks']):,}")
+            with col2:
+                st.metric("Unique Artists",
+                          f"{int(row['unique_artists']):,}")
+            with col3:
+                st.metric("Avg Popularity",
+                          f"{row['avg_popularity']:.1f}")
+            with col4:
+                st.metric("Avg Danceability",
+                          f"{row['avg_danceability']:.2f}")
+            with col5:
+                st.metric("Avg Energy",
+                          f"{row['avg_energy']:.2f}")
+
+            st.markdown("---")
+
+            # --- Tabbed Views ---
+            tab1, tab2, tab3 = st.tabs([
+                "🏆 Artist Insights",
+                "📅 Decade Trends",
+                "🔬 Audio Feature Analysis"
+            ])
+
+            # ============================
+            # TAB 1: ARTIST INSIGHTS
+            # ============================
+            with tab1:
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    st.markdown("#### Top 15 Artists by Track Count")
+                    fig_bar = px.bar(
+                        top_artists.sort_values('track_count'),
+                        x='track_count', y='artist',
+                        orientation='h',
+                        color='avg_popularity',
+                        color_continuous_scale='Viridis',
+                        labels={'track_count': 'Tracks',
+                                'avg_popularity': 'Avg Pop.'},
+                    )
+                    fig_bar.update_layout(
+                        **PLOTLY_LAYOUT, height=500,
+                        yaxis=dict(gridcolor=COLORS['grid']),
+                        coloraxis_colorbar=dict(title="Pop."),
+                    )
+                    st.plotly_chart(fig_bar, use_container_width=True)
+
+                with col_right:
+                    st.markdown("#### Artist Audio DNA Radar")
+                    # Radar chart for top 5 artists
+                    top5 = top_artists.head(5)
+                    fig_radar = go.Figure()
+                    categories = ['Popularity', 'Danceability',
+                                  'Energy']
+
+                    radar_colors = [
+                        COLORS['primary'], COLORS['secondary'],
+                        COLORS['success'], COLORS['warning'],
+                        COLORS['info']
+                    ]
+
+                    for i, (_, art) in enumerate(top5.iterrows()):
+                        vals = [
+                            art['avg_popularity'] / 100,
+                            art['avg_danceability'],
+                            art['avg_energy']
+                        ]
+                        fig_radar.add_trace(go.Scatterpolar(
+                            r=vals + [vals[0]],
+                            theta=categories + [categories[0]],
+                            fill='toself',
+                            name=art['artist'][:20],
+                            line=dict(color=radar_colors[
+                                i % len(radar_colors)]),
+                            opacity=0.6
+                        ))
+                    fig_radar.update_layout(
+                        polar=dict(
+                            bgcolor='rgba(0,0,0,0)',
+                            radialaxis=dict(
+                                visible=True, range=[0, 1],
+                                gridcolor=COLORS['grid']),
+                            angularaxis=dict(
+                                gridcolor=COLORS['grid']),
+                        ),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color=COLORS['text']),
+                        height=500,
+                        legend=dict(orientation='h', y=-0.15),
+                        margin=dict(l=60, r=60, t=40, b=40),
+                    )
+                    st.plotly_chart(
+                        fig_radar, use_container_width=True)
+
+                # Popularity vs Track Count bubble
+                st.markdown(
+                    "#### Artist Popularity vs Catalog Size")
+                fig_bubble = px.scatter(
+                    top_artists, x='track_count',
+                    y='avg_popularity',
+                    size='avg_energy',
+                    color='avg_danceability',
+                    hover_name='artist',
+                    color_continuous_scale='Plasma',
+                    size_max=40,
+                    labels={
+                        'track_count': 'Total Tracks',
+                        'avg_popularity': 'Avg Popularity',
+                        'avg_energy': 'Avg Energy',
+                        'avg_danceability': 'Danceability'},
+                )
+                fig_bubble.update_layout(
+                    **PLOTLY_LAYOUT, height=400,
+                )
+                st.plotly_chart(fig_bubble,
+                                use_container_width=True)
+
+            # ============================
+            # TAB 2: DECADE TRENDS
+            # ============================
+            with tab2:
+                if not decade_df.empty:
+                    col_left, col_right = st.columns(2)
+
+                    with col_left:
+                        st.markdown(
+                            "#### Tracks Produced Per Decade")
+                        decade_df['decade_label'] = (
+                            decade_df['decade'].astype(str) + 's')
+                        fig_decade_bar = px.bar(
+                            decade_df, x='decade_label',
+                            y='track_count',
+                            color='avg_popularity',
+                            color_continuous_scale='Turbo',
+                            labels={
+                                'decade_label': 'Decade',
+                                'track_count': 'Tracks',
+                                'avg_popularity': 'Pop.'},
+                            text='track_count',
+                        )
+                        fig_decade_bar.update_traces(
+                            textposition='outside')
+                        fig_decade_bar.update_layout(
+                            **PLOTLY_LAYOUT, height=400,
+                        )
+                        st.plotly_chart(
+                            fig_decade_bar,
+                            use_container_width=True)
+
+                    with col_right:
+                        st.markdown(
+                            "#### Audio Feature Evolution "
+                            "Across Decades")
+                        fig_line = go.Figure()
+                        fig_line.add_trace(go.Scatter(
+                            x=decade_df['decade'],
+                            y=decade_df['avg_danceability'],
+                            mode='lines+markers',
+                            name='Danceability',
+                            line=dict(
+                                color=COLORS['primary'],
+                                width=3),
+                            marker=dict(size=8),
+                        ))
+                        fig_line.add_trace(go.Scatter(
+                            x=decade_df['decade'],
+                            y=decade_df['avg_energy'],
+                            mode='lines+markers',
+                            name='Energy',
+                            line=dict(
+                                color=COLORS['secondary'],
+                                width=3),
+                            marker=dict(size=8),
+                        ))
+                        fig_line.add_trace(go.Scatter(
+                            x=decade_df['decade'],
+                            y=decade_df['avg_popularity'] / 100,
+                            mode='lines+markers',
+                            name='Popularity (scaled)',
+                            line=dict(
+                                color=COLORS['success'],
+                                width=3),
+                            marker=dict(size=8),
+                        ))
+                        fig_line.update_layout(
+                            **PLOTLY_LAYOUT, height=400,
+                            xaxis_title='Decade',
+                            yaxis_title='Score (0-1)',
+                            legend=dict(
+                                orientation='h', y=-0.15),
+                        )
+                        st.plotly_chart(
+                            fig_line, use_container_width=True)
+
+                    # Decade heatmap
+                    st.markdown(
+                        "#### Decade × Feature Heatmap")
+                    heat_data = decade_df[[
+                        'decade_label', 'avg_popularity',
+                        'avg_danceability', 'avg_energy'
+                    ]].set_index('decade_label')
+                    heat_data.columns = [
+                        'Popularity', 'Danceability', 'Energy']
+                    # Normalize
+                    heat_norm = heat_data.copy()
+                    for col in heat_norm.columns:
+                        cmin = heat_norm[col].min()
+                        cmax = heat_norm[col].max()
+                        denom = cmax - cmin
+                        if denom > 0:
+                            heat_norm[col] = (
+                                (heat_norm[col] - cmin) / denom)
+                        else:
+                            heat_norm[col] = 0
+
+                    fig_heat = px.imshow(
+                        heat_norm.T,
+                        text_auto='.2f',
+                        color_continuous_scale='RdYlGn',
+                        aspect='auto',
+                    )
+                    fig_heat.update_layout(
+                        **PLOTLY_LAYOUT, height=300,
+                        xaxis_title='Decade',
+                        yaxis_title='Feature',
+                    )
+                    st.plotly_chart(
+                        fig_heat, use_container_width=True)
+                else:
+                    st.info("No decade data available.")
+
+            # ============================
+            # TAB 3: AUDIO FEATURE ANALYSIS
+            # ============================
+            with tab3:
+                if not all_tracks.empty:
+                    col_left, col_right = st.columns(2)
+
+                    with col_left:
+                        st.markdown(
+                            "#### Danceability vs Energy")
+                        fig_scatter = px.scatter(
+                            all_tracks,
+                            x='danceability', y='energy',
+                            color='popularity',
+                            color_continuous_scale='Inferno',
+                            opacity=0.5,
+                            labels={
+                                'danceability': 'Danceability',
+                                'energy': 'Energy',
+                                'popularity': 'Popularity'},
+                        )
+                        fig_scatter.update_traces(
+                            marker=dict(size=4))
+                        fig_scatter.update_layout(
+                            **PLOTLY_LAYOUT, height=450,
+                        )
+                        st.plotly_chart(
+                            fig_scatter,
+                            use_container_width=True)
+
+                    with col_right:
+                        st.markdown(
+                            "#### Feature Distributions")
+                        fig_dist = make_subplots(
+                            rows=3, cols=1, shared_xaxes=False,
+                            subplot_titles=[
+                                'Danceability', 'Energy',
+                                'Popularity'],
+                            vertical_spacing=0.12,
+                        )
+                        fig_dist.add_trace(go.Histogram(
+                            x=all_tracks['danceability'],
+                            nbinsx=40,
+                            marker_color=COLORS['primary'],
+                            opacity=0.8, name='Dance',
+                        ), row=1, col=1)
+                        fig_dist.add_trace(go.Histogram(
+                            x=all_tracks['energy'],
+                            nbinsx=40,
+                            marker_color=COLORS['secondary'],
+                            opacity=0.8, name='Energy',
+                        ), row=2, col=1)
+                        fig_dist.add_trace(go.Histogram(
+                            x=all_tracks['popularity'],
+                            nbinsx=40,
+                            marker_color=COLORS['success'],
+                            opacity=0.8, name='Pop',
+                        ), row=3, col=1)
+                        fig_dist.update_layout(
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font=dict(color=COLORS['text']),
+                            height=450, showlegend=False,
+                            margin=dict(
+                                l=40, r=40, t=40, b=20),
+                        )
+                        for i in range(1, 4):
+                            fig_dist.update_xaxes(
+                                gridcolor=COLORS['grid'],
+                                row=i, col=1)
+                            fig_dist.update_yaxes(
+                                gridcolor=COLORS['grid'],
+                                row=i, col=1)
+                        st.plotly_chart(
+                            fig_dist,
+                            use_container_width=True)
+
+                    # Correlation matrix
+                    st.markdown(
+                        "#### Audio Feature Correlations")
+                    corr = all_tracks[[
+                        'danceability', 'energy',
+                        'popularity']].corr()
+                    fig_corr = px.imshow(
+                        corr, text_auto='.3f',
+                        color_continuous_scale='RdBu_r',
+                        zmin=-1, zmax=1,
+                        aspect='auto',
+                    )
+                    fig_corr.update_layout(
+                        **PLOTLY_LAYOUT, height=350,
+                    )
+                    st.plotly_chart(
+                        fig_corr, use_container_width=True)
+                else:
+                    st.info("No track data available.")
+
     except Exception as e:
         st.error(f"Error loading Spotify data: {e}")
 
 # =====================================================
-# AIRFLOW STATUS
+# AIRFLOW STATUS — FULLY REDESIGNED
 # =====================================================
 elif selection == "Airflow Status":
-    st.title("⚙️ Airflow DAG Run History")
+    st.title("⚙️ Airflow Pipeline Operations")
     st.markdown(
-        "Monitoring automated data pipeline executions "
-        "directly from the database.")
+        "Real-time monitoring of automated DAG executions "
+        "and pipeline health metrics.")
 
     try:
         query = """
-            SELECT dag_id, execution_date, state, run_type
+            SELECT dag_id, execution_date, state, run_type,
+                   start_date, end_date
             FROM dag_run
             ORDER BY execution_date DESC
-            LIMIT 50
+            LIMIT 100
         """
         df = pd.read_sql(query, engine)
-        if not df.empty:
-            st.subheader("Recent DAG Runs")
-            st.dataframe(df, use_container_width=True)
 
-            status_counts = df['state'].value_counts()
-            st.subheader("Run Status Distribution")
-            st.bar_chart(status_counts)
+        if not df.empty:
+            # --- KPI Row ---
+            total_runs = len(df)
+            unique_dags = df['dag_id'].nunique()
+            success_count = len(df[df['state'] == 'success'])
+            failed_count = len(df[df['state'] == 'failed'])
+            success_rate = (
+                success_count / total_runs * 100
+                if total_runs > 0 else 0)
+
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.metric("Total Runs", f"{total_runs}")
+            with col2:
+                st.metric("Unique DAGs", f"{unique_dags}")
+            with col3:
+                st.metric("Successful", f"{success_count}",
+                          delta=f"{success_rate:.0f}%")
+            with col4:
+                st.metric("Failed", f"{failed_count}",
+                          delta=f"-{failed_count}" if
+                          failed_count > 0 else "0",
+                          delta_color="inverse")
+            with col5:
+                running_count = len(
+                    df[df['state'] == 'running'])
+                st.metric("Running Now", f"{running_count}")
+
+            st.markdown("---")
+
+            tab1, tab2, tab3 = st.tabs([
+                "📊 Overview",
+                "📋 Run History",
+                "🔍 Per-DAG Analysis"
+            ])
+
+            # ============================
+            # TAB 1: OVERVIEW
+            # ============================
+            with tab1:
+                col_left, col_right = st.columns(2)
+
+                with col_left:
+                    st.markdown("#### Pipeline Success Rate")
+                    fig_gauge = go.Figure(go.Indicator(
+                        mode="gauge+number+delta",
+                        value=success_rate,
+                        number=dict(suffix="%"),
+                        delta=dict(
+                            reference=95,
+                            increasing=dict(
+                                color=COLORS['success']),
+                            decreasing=dict(
+                                color=COLORS['danger'])),
+                        gauge=dict(
+                            axis=dict(range=[0, 100]),
+                            bar=dict(
+                                color=COLORS['success']),
+                            bgcolor=COLORS['grid'],
+                            borderwidth=0,
+                            steps=[
+                                dict(range=[0, 50],
+                                     color='#2D1B2E'),
+                                dict(range=[50, 80],
+                                     color='#1B2D2E'),
+                                dict(range=[80, 100],
+                                     color='#1B2E1B')],
+                            threshold=dict(
+                                line=dict(
+                                    color=COLORS['warning'],
+                                    width=3),
+                                thickness=0.8,
+                                value=95)),
+                        title=dict(
+                            text="Target: 95%",
+                            font=dict(size=14)),
+                    ))
+                    fig_gauge.update_layout(
+                        height=350,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color=COLORS['text']),
+                        margin=dict(l=30, r=30, t=60, b=20))
+                    st.plotly_chart(
+                        fig_gauge,
+                        use_container_width=True)
+
+                with col_right:
+                    st.markdown(
+                        "#### Run Status Distribution")
+                    state_df = df['state'].value_counts(
+                        ).reset_index()
+                    state_df.columns = ['state', 'count']
+
+                    state_colors = {
+                        'success': COLORS['success'],
+                        'failed': COLORS['danger'],
+                        'running': COLORS['info'],
+                        'queued': COLORS['warning'],
+                    }
+                    state_df['color'] = state_df['state'].map(
+                        lambda x: state_colors.get(
+                            x, COLORS['primary']))
+
+                    fig_state = px.pie(
+                        state_df, values='count',
+                        names='state',
+                        color='state',
+                        color_discrete_map=state_colors,
+                        hole=0.5,
+                    )
+                    fig_state.update_layout(
+                        **PLOTLY_LAYOUT, height=350,
+                        legend=dict(
+                            orientation='h', y=-0.1),
+                    )
+                    st.plotly_chart(
+                        fig_state,
+                        use_container_width=True)
+
+                # Timeline
+                st.markdown("#### Execution Timeline")
+                df_sorted = df.sort_values('execution_date')
+
+                # Color map by state
+                fig_timeline = px.scatter(
+                    df_sorted, x='execution_date',
+                    y='dag_id', color='state',
+                    color_discrete_map=state_colors,
+                    symbol='run_type',
+                    hover_data=['state', 'run_type'],
+                    size_max=12,
+                )
+                fig_timeline.update_traces(
+                    marker=dict(size=10))
+                fig_timeline.update_layout(
+                    **PLOTLY_LAYOUT, height=350,
+                    xaxis_title='Execution Date',
+                    yaxis_title='',
+                    legend=dict(orientation='h', y=-0.15),
+                )
+                st.plotly_chart(
+                    fig_timeline,
+                    use_container_width=True)
+
+            # ============================
+            # TAB 2: RUN HISTORY
+            # ============================
+            with tab2:
+                st.markdown("#### 📋 Recent DAG Runs")
+
+                display_df = df.copy()
+                state_emoji = {
+                    'success': '✅ Success',
+                    'failed': '❌ Failed',
+                    'running': '🔄 Running',
+                    'queued': '⏳ Queued',
+                }
+                display_df['status'] = display_df[
+                    'state'].map(
+                    lambda x: state_emoji.get(x, x))
+
+                show_cols = [
+                    'dag_id', 'status',
+                    'execution_date', 'run_type']
+                available = [
+                    c for c in show_cols
+                    if c in display_df.columns]
+
+                st.dataframe(
+                    display_df[available].head(50),
+                    use_container_width=True, height=500)
+
+            # ============================
+            # TAB 3: PER-DAG ANALYSIS
+            # ============================
+            with tab3:
+                st.markdown("#### Per-DAG Performance")
+
+                dag_stats = df.groupby('dag_id').agg(
+                    total_runs=('state', 'count'),
+                    successes=('state',
+                               lambda x: (x == 'success').sum()),
+                    failures=('state',
+                              lambda x: (x == 'failed').sum()),
+                ).reset_index()
+                dag_stats['success_rate'] = (
+                    dag_stats['successes'] /
+                    dag_stats['total_runs'] * 100
+                ).round(1)
+
+                fig_dag_bar = px.bar(
+                    dag_stats, x='dag_id',
+                    y=['successes', 'failures'],
+                    barmode='stack',
+                    color_discrete_map={
+                        'successes': COLORS['success'],
+                        'failures': COLORS['danger']},
+                    labels={'value': 'Runs',
+                            'variable': 'Status'},
+                    text_auto=True,
+                )
+                fig_dag_bar.update_layout(
+                    **PLOTLY_LAYOUT, height=400,
+                    xaxis_title='DAG',
+                    yaxis_title='Number of Runs',
+                    legend=dict(orientation='h', y=-0.15),
+                )
+                st.plotly_chart(
+                    fig_dag_bar,
+                    use_container_width=True)
+
+                # Success rate table
+                st.markdown("#### Success Rate by DAG")
+                st.dataframe(
+                    dag_stats[['dag_id', 'total_runs',
+                               'successes', 'failures',
+                               'success_rate']],
+                    use_container_width=True)
+
         else:
             st.info("No DAG runs found yet.")
     except Exception as e:
         st.error(
-            f"Error loading Airflow data (this is expected if Airflow "
-            f"hasn't fully initialized the DB yet): {e}")
+            f"Error loading Airflow data (expected if Airflow "
+            f"hasn't fully initialized): {e}")
 
 # =====================================================
 # ENERGY FORECASTING
