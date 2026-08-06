@@ -12,3 +12,6 @@ Prophet v2.0 incorporates temporal regressors such as `hour_of_day` and `day_of_
 ## Hyperparameter Tuning
 GridSearchCV for XGBoost explores `max_depth` (4, 6, 8), `n_estimators` (100, 200), and `learning_rate` (0.01, 0.1) using a 3-fold stratified cross-validation.
 
+## Batch ETL
+The Spotify data extraction pipeline runs on a daily batch schedule via Airflow, transforming JSON responses into normalized PostgreSQL tables.
+
