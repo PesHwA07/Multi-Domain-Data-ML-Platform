@@ -18,3 +18,6 @@ The Spotify data extraction pipeline runs on a daily batch schedule via Airflow,
 ## Anomaly Storage
 The `energy.forecasts` table includes boolean flags for anomalies where actual consumption exceeds the Prophet upper confidence interval.
 
+## Velocity Features
+Fraud detection incorporates velocity metrics including `amount_log` and `amount_zscore` to normalize the transaction amounts against historical distributions.
+
