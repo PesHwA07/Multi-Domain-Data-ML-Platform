@@ -57,3 +57,6 @@ Pytest is used for verifying API endpoint responses, ensuring that the `/predict
 ## XGBoost Weighting
 The `scale_pos_weight` parameter is dynamically calculated based on the negative-to-positive class ratio to naturally penalize minority class misclassifications.
 
+## AutoML Validation
+PyCaret is utilized to rapidly establish automated baselines (e.g., Extra Trees) to validate the effectiveness of manual hyperparameter tuning.
+
