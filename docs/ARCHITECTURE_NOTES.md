@@ -117,3 +117,6 @@ SMOTE is configured to synthesize minority samples until the class ratio reaches
 ## Model Drift
 If the weekly retraining pipeline yields a PR-AUC lower than 0.85, the deployment is halted and an alert is logged.
 
+## Scalability
+The current monolithic PostgreSQL database can be migrated to a distributed warehouse (e.g., Snowflake) as data volume grows.
+
