@@ -78,3 +78,6 @@ SMOTE inside K-fold cross-validation is highly memory-intensive. Chunking or red
 ## Telemetry
 The FastAPI service asynchronously writes prediction results (transaction ID, probability, latency) to the database for the Streamlit UI to consume.
 
+## Reproducibility
+A global random seed (42) is enforced across `train_test_split`, SMOTE, and XGBoost to ensure benchmark consistency.
+
