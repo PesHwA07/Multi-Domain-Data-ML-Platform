@@ -69,3 +69,6 @@ Airflow schedules a weekly model retraining task that pulls the latest data, run
 ## Data Validation
 Pydantic models strictly enforce input schemas for the FastAPI service, ensuring missing features raise 422 Unprocessable Entity errors.
 
+## Logging
+Python's built-in `logging` module is configured to emit structured logs from both Airflow tasks and the FastAPI backend for centralized monitoring.
+
