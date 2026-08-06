@@ -81,3 +81,6 @@ The FastAPI service asynchronously writes prediction results (transaction ID, pr
 ## Reproducibility
 A global random seed (42) is enforced across `train_test_split`, SMOTE, and XGBoost to ensure benchmark consistency.
 
+## Pipeline Verification
+ETL pipelines include data quality checks (e.g., checking for nulls or negative energy values) before committing transactions to the database.
+
