@@ -75,3 +75,6 @@ Python's built-in `logging` module is configured to emit structured logs from bo
 ## Resource Management
 SMOTE inside K-fold cross-validation is highly memory-intensive. Chunking or reduced fold counts are used if memory exceeds 80% capacity.
 
+## Telemetry
+The FastAPI service asynchronously writes prediction results (transaction ID, probability, latency) to the database for the Streamlit UI to consume.
+
