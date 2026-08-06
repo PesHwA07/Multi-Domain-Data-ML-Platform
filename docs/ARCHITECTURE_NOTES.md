@@ -51,3 +51,6 @@ An ARIMA(1,1,1) model serves as the baseline for energy forecasting, establishin
 ## Feature Space
 The original V1-V28 PCA features in the fraud dataset are preserved without additional scaling, as PCA components are already standardized.
 
+## Testing
+Pytest is used for verifying API endpoint responses, ensuring that the `/predict/fraud` route correctly validates JSON payloads.
+
