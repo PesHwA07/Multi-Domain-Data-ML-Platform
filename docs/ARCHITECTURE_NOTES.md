@@ -36,3 +36,6 @@ The `fetch_data.py` script utilizes the Kaggle API to securely pull raw transact
 ## Monitoring UI
 A Streamlit application queries the PostgreSQL database to visualize historical telemetry and real-time fraud predictions.
 
+## DAG Architecture
+The Airflow DAGs enforce strong dependencies: data must be fully extracted and loaded before any model retraining tasks are triggered.
+
