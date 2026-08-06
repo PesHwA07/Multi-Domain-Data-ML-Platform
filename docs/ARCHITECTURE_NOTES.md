@@ -105,3 +105,6 @@ The cost of investigating a false positive is estimated to be significantly lowe
 ## Image Optimization
 The Dockerfile utilizes multi-stage builds and a slim Python base image to minimize the final container footprint.
 
+## Normalization
+StandardScaler is applied only to the `Amount` and `Time` features, ensuring they align with the scale of the pre-processed PCA features.
+
