@@ -93,3 +93,6 @@ The `requirements.txt` strictly pins versions for `scikit-learn`, `xgboost`, and
 ## Forecasting Capacity
 Prophet's default changepoint prior scale is adjusted to prevent overfitting on the highly volatile holiday periods in the energy dataset.
 
+## Rate Limiting
+While not currently enabled, the architecture supports applying rate limits on the `/predict` endpoints via middleware to prevent abuse.
+
