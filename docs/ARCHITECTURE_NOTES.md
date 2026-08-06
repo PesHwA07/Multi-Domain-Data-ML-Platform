@@ -72,3 +72,6 @@ Pydantic models strictly enforce input schemas for the FastAPI service, ensuring
 ## Logging
 Python's built-in `logging` module is configured to emit structured logs from both Airflow tasks and the FastAPI backend for centralized monitoring.
 
+## Resource Management
+SMOTE inside K-fold cross-validation is highly memory-intensive. Chunking or reduced fold counts are used if memory exceeds 80% capacity.
+
