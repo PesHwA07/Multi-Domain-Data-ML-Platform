@@ -102,3 +102,6 @@ The platform demonstrates that batch, streaming, and ML workloads can effectivel
 ## Business Logic
 The cost of investigating a false positive is estimated to be significantly lower than missing a fraudulent transaction, guiding model selection.
 
+## Image Optimization
+The Dockerfile utilizes multi-stage builds and a slim Python base image to minimize the final container footprint.
+
