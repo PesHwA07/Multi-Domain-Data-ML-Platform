@@ -33,3 +33,6 @@ Precision-Recall Area Under Curve (PR-AUC) is the primary metric for fraud detec
 ## Data Ingestion
 The `fetch_data.py` script utilizes the Kaggle API to securely pull raw transaction and energy datasets without committing them to version control.
 
+## Monitoring UI
+A Streamlit application queries the PostgreSQL database to visualize historical telemetry and real-time fraud predictions.
+
