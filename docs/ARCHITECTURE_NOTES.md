@@ -114,3 +114,6 @@ A dedicated `/health` endpoint is implemented in FastAPI for load balancers or o
 ## Resampling
 SMOTE is configured to synthesize minority samples until the class ratio reaches 1.0, providing maximum signal to the tree-based models.
 
+## Model Drift
+If the weekly retraining pipeline yields a PR-AUC lower than 0.85, the deployment is halted and an alert is logged.
+
