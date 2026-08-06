@@ -48,3 +48,6 @@ SQLAlchemy connection pooling is configured to handle concurrent requests from b
 ## Baselines
 An ARIMA(1,1,1) model serves as the baseline for energy forecasting, establishing the minimum performance threshold for the Prophet model.
 
+## Feature Space
+The original V1-V28 PCA features in the fraud dataset are preserved without additional scaling, as PCA components are already standardized.
+
