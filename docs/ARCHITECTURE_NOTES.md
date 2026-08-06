@@ -24,3 +24,6 @@ Fraud detection incorporates velocity metrics including `amount_log` and `amount
 ## Model Artifacts
 Trained models are serialized using `joblib` and stored in the local registry. The API loads the latest version dynamically at startup.
 
+## Containerization
+Docker Compose orchestrates the Airflow scheduler, webserver, PostgreSQL database, and the FastAPI inference service within a unified bridge network.
+
