@@ -15,3 +15,6 @@ GridSearchCV for XGBoost explores `max_depth` (4, 6, 8), `n_estimators` (100, 20
 ## Batch ETL
 The Spotify data extraction pipeline runs on a daily batch schedule via Airflow, transforming JSON responses into normalized PostgreSQL tables.
 
+## Anomaly Storage
+The `energy.forecasts` table includes boolean flags for anomalies where actual consumption exceeds the Prophet upper confidence interval.
+
