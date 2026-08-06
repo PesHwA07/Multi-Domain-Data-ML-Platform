@@ -60,3 +60,6 @@ The `scale_pos_weight` parameter is dynamically calculated based on the negative
 ## AutoML Validation
 PyCaret is utilized to rapidly establish automated baselines (e.g., Extra Trees) to validate the effectiveness of manual hyperparameter tuning.
 
+## Configuration
+Sensitive credentials, including Kaggle API keys and database passwords, are injected strictly via environment variables.
+
