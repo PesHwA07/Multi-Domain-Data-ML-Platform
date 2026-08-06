@@ -42,3 +42,6 @@ The Airflow DAGs enforce strong dependencies: data must be fully extracted and l
 ## Threshold Tuning
 Classification thresholds may be adjusted post-training to prioritize recall over precision, minimizing the financial impact of false negatives.
 
+## Database Connections
+SQLAlchemy connection pooling is configured to handle concurrent requests from both the Airflow workers and the FastAPI service.
+
