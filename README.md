@@ -95,6 +95,19 @@ Trained on **284,807 transactions** with extreme class imbalance (99.83% legitim
 | **PR-AUC** | 0.8530 | **0.8851** | <span style="color:green">+3.8%</span> |
 | **Inference Latency** | ~86ms | ~86ms | — |
 
+#### 🤖 AutoML Benchmark Comparison
+To validate the necessity of manual hyperparameter tuning and feature engineering, I benchmarked my custom XGBoost + SMOTE model against an automated pipeline using **PyCaret**. Both approaches were trained on the exact same dataset with identical cross-validation folds and SMOTE imbalance handling.
+
+| Metric | Manual XGBoost + SMOTE | PyCaret (Best Automated Model) |
+|--------|------------------------|--------------------------------|
+| **Best Algorithm**| XGBoost | Extra Trees Classifier |
+| **PR-AUC** | **0.8876** | 0.8730 |
+| **Precision** | 0.8131 | 0.8968 |
+| **Recall** | 0.8878 | 0.8313 |
+| **F1-Score** | 0.8488 | 0.8618 |
+
+**Takeaway:** PyCaret's automated search quickly established a strong 0.8730 PR-AUC baseline out-of-the-box. However, carefully hand-tuning an XGBoost model via GridSearchCV (specifically optimizing `scale_pos_weight` alongside velocity features) ultimately outperformed the automated search's PR-AUC by capturing more true fraud cases (higher recall). Furthermore, PyCaret's randomized `tune_model()` failed to improve upon its own baseline within a standard iteration budget. This demonstrates that while AutoML is fantastic for rapid baselining, domain-specific manual tuning still yields the highest performance for highly imbalanced, cost-sensitive fraud detection.
+
 ### 📉 Energy Demand Forecasting (Prophet v2.0)
 
 Evaluated across **145,362 hourly readings** from the PJM Interconnection energy grid. Prophet v2.0 adds US holiday effects and temporal regressors, outperforming both the ARIMA baseline and vanilla Prophet.
