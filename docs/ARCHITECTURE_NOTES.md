@@ -9,3 +9,6 @@ To handle the 0.17% fraud rate, SMOTE (Synthetic Minority Over-sampling Techniqu
 ## Energy Forecasting
 Prophet v2.0 incorporates temporal regressors such as `hour_of_day` and `day_of_week` alongside US holiday effects to capture grid load patterns.
 
+## Hyperparameter Tuning
+GridSearchCV for XGBoost explores `max_depth` (4, 6, 8), `n_estimators` (100, 200), and `learning_rate` (0.01, 0.1) using a 3-fold stratified cross-validation.
+
