@@ -99,3 +99,6 @@ While not currently enabled, the architecture supports applying rate limits on t
 ## Architecture
 The platform demonstrates that batch, streaming, and ML workloads can effectively share a unified storage and orchestration layer.
 
+## Business Logic
+The cost of investigating a false positive is estimated to be significantly lower than missing a fraudulent transaction, guiding model selection.
+
