@@ -21,3 +21,6 @@ The `energy.forecasts` table includes boolean flags for anomalies where actual c
 ## Velocity Features
 Fraud detection incorporates velocity metrics including `amount_log` and `amount_zscore` to normalize the transaction amounts against historical distributions.
 
+## Model Artifacts
+Trained models are serialized using `joblib` and stored in the local registry. The API loads the latest version dynamically at startup.
+
