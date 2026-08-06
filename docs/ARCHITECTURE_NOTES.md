@@ -66,3 +66,6 @@ Sensitive credentials, including Kaggle API keys and database passwords, are inj
 ## Retraining
 Airflow schedules a weekly model retraining task that pulls the latest data, runs GridSearchCV, and updates the production model artifact.
 
+## Data Validation
+Pydantic models strictly enforce input schemas for the FastAPI service, ensuring missing features raise 422 Unprocessable Entity errors.
+
