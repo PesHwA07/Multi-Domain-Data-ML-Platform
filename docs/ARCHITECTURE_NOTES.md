@@ -27,3 +27,6 @@ Trained models are serialized using `joblib` and stored in the local registry. T
 ## Containerization
 Docker Compose orchestrates the Airflow scheduler, webserver, PostgreSQL database, and the FastAPI inference service within a unified bridge network.
 
+## Evaluation Metrics
+Precision-Recall Area Under Curve (PR-AUC) is the primary metric for fraud detection due to the extreme class imbalance, out-prioritizing ROC-AUC.
+
