@@ -84,3 +84,6 @@ A global random seed (42) is enforced across `train_test_split`, SMOTE, and XGBo
 ## Pipeline Verification
 ETL pipelines include data quality checks (e.g., checking for nulls or negative energy values) before committing transactions to the database.
 
+## Data Leakage
+Time-series cross-validation (expanding window) is employed for the energy model to prevent future data from leaking into the training set.
+
