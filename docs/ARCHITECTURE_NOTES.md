@@ -54,3 +54,6 @@ The original V1-V28 PCA features in the fraud dataset are preserved without addi
 ## Testing
 Pytest is used for verifying API endpoint responses, ensuring that the `/predict/fraud` route correctly validates JSON payloads.
 
+## XGBoost Weighting
+The `scale_pos_weight` parameter is dynamically calculated based on the negative-to-positive class ratio to naturally penalize minority class misclassifications.
+
