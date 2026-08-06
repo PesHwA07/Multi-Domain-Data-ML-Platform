@@ -30,3 +30,6 @@ Docker Compose orchestrates the Airflow scheduler, webserver, PostgreSQL databas
 ## Evaluation Metrics
 Precision-Recall Area Under Curve (PR-AUC) is the primary metric for fraud detection due to the extreme class imbalance, out-prioritizing ROC-AUC.
 
+## Data Ingestion
+The `fetch_data.py` script utilizes the Kaggle API to securely pull raw transaction and energy datasets without committing them to version control.
+
