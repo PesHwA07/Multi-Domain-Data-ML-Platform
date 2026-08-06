@@ -111,3 +111,6 @@ StandardScaler is applied only to the `Amount` and `Time` features, ensuring the
 ## Observability
 A dedicated `/health` endpoint is implemented in FastAPI for load balancers or orchestrators to verify service availability.
 
+## Resampling
+SMOTE is configured to synthesize minority samples until the class ratio reaches 1.0, providing maximum signal to the tree-based models.
+
