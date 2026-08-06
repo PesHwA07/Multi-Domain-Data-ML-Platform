@@ -90,3 +90,6 @@ Time-series cross-validation (expanding window) is employed for the energy model
 ## Dependencies
 The `requirements.txt` strictly pins versions for `scikit-learn`, `xgboost`, and `fastapi` to prevent unexpected breaking changes during deployment.
 
+## Forecasting Capacity
+Prophet's default changepoint prior scale is adjusted to prevent overfitting on the highly volatile holiday periods in the energy dataset.
+
