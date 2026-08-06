@@ -45,3 +45,6 @@ Classification thresholds may be adjusted post-training to prioritize recall ove
 ## Database Connections
 SQLAlchemy connection pooling is configured to handle concurrent requests from both the Airflow workers and the FastAPI service.
 
+## Baselines
+An ARIMA(1,1,1) model serves as the baseline for energy forecasting, establishing the minimum performance threshold for the Prophet model.
+
