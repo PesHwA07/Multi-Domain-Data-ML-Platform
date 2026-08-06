@@ -96,3 +96,6 @@ Prophet's default changepoint prior scale is adjusted to prevent overfitting on 
 ## Rate Limiting
 While not currently enabled, the architecture supports applying rate limits on the `/predict` endpoints via middleware to prevent abuse.
 
+## Architecture
+The platform demonstrates that batch, streaming, and ML workloads can effectively share a unified storage and orchestration layer.
+
