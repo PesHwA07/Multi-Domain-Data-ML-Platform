@@ -108,3 +108,6 @@ The Dockerfile utilizes multi-stage builds and a slim Python base image to minim
 ## Normalization
 StandardScaler is applied only to the `Amount` and `Time` features, ensuring they align with the scale of the pre-processed PCA features.
 
+## Observability
+A dedicated `/health` endpoint is implemented in FastAPI for load balancers or orchestrators to verify service availability.
+
