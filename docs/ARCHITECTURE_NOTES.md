@@ -39,3 +39,6 @@ A Streamlit application queries the PostgreSQL database to visualize historical 
 ## DAG Architecture
 The Airflow DAGs enforce strong dependencies: data must be fully extracted and loaded before any model retraining tasks are triggered.
 
+## Threshold Tuning
+Classification thresholds may be adjusted post-training to prioritize recall over precision, minimizing the financial impact of false negatives.
+
