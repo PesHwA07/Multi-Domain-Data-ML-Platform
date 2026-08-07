@@ -95,18 +95,19 @@ Trained on **284,807 transactions** with extreme class imbalance (99.83% legitim
 | **PR-AUC** | 0.8530 | **0.8851** | <span style="color:green">+3.8%</span> |
 | **Inference Latency** | ~86ms | ~86ms | — |
 
-#### 🤖 AutoML Benchmark Comparison
-To validate the necessity of manual hyperparameter tuning and feature engineering, I benchmarked my custom XGBoost + SMOTE model against an automated pipeline using **PyCaret**. Both approaches were trained on the exact same dataset with identical cross-validation folds and SMOTE imbalance handling.
+#### 🤖 Iterative Model Improvements
+To validate the necessity of manual hyperparameter tuning and feature engineering, I tracked the performance of the model across various incremental improvements, comparing it against an automated pipeline using **PyCaret**.
 
-| Metric | Manual XGBoost + SMOTE | PyCaret (Best Automated Model) |
-|--------|------------------------|--------------------------------|
-| **Best Algorithm**| XGBoost | Extra Trees Classifier |
-| **PR-AUC** | **0.8876** | 0.8730 |
-| **Precision** | 0.8131 | 0.8968 |
-| **Recall** | 0.8878 | 0.8313 |
-| **F1-Score** | 0.8488 | 0.8618 |
+| Approach | PR-AUC | Precision | Recall | F1 |
+|:---|:---:|:---:|:---:|:---:|
+| Manual XGBoost + SMOTE (baseline) | 0.8876 | 0.8131 | 0.8878 | 0.8488 |
+| PyCaret Extra Trees (AutoML) | 0.8730 | 0.8968 | 0.8313 | 0.8618 |
+| Threshold tuning | 0.8876 | 0.6027 | 0.8980 | 0.7213 |
+| Feature engineering | 0.8741 | 0.7568 | 0.8571 | 0.8038 |
+| Ensemble (XGB + Extra Trees) | 0.8938 | 0.8113 | 0.8776 | 0.8431 |
+| LightGBM (native API) | 0.7183 | 0.1333 | 0.8980 | 0.2322 |
 
-**Takeaway:** PyCaret's automated search quickly established a strong 0.8730 PR-AUC baseline out-of-the-box. However, carefully hand-tuning an XGBoost model via GridSearchCV (specifically optimizing `scale_pos_weight` alongside velocity features) ultimately outperformed the automated search's PR-AUC by capturing more true fraud cases (higher recall). Furthermore, PyCaret's randomized `tune_model()` failed to improve upon its own baseline within a standard iteration budget. This demonstrates that while AutoML is fantastic for rapid baselining, domain-specific manual tuning still yields the highest performance for highly imbalanced, cost-sensitive fraud detection.
+**Takeaway:** While the automated search quickly established a strong baseline, domain-specific tuning and ensemble methods (XGBoost + Extra Trees) ultimately achieved the highest overall PR-AUC (0.8938). Interestingly, LightGBM struggled significantly on this specific dataset, likely due to sensitivity to class imbalance and data layout.
 
 ### 📉 Energy Demand Forecasting (Prophet v2.0)
 
